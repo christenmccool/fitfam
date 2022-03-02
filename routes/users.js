@@ -103,8 +103,29 @@ const Result = require("../models/result");
 });
 
 
-/** GET /[username]/families => { families: [ {id1, familyname1}, {id2, familyname2}, ... } ] }
+/** POST /[username]/families/[familyId] => { familyStatus }
+ * 
+ * familyStatus is {familyId, status, isAdmin, primaryFamily, joinDate} 
+ **/
+ router.post("/:username/families/:familyId", async function (req, res, next) {
+  try {  
+    let {username, familyId} = req.params;
+    familyId = +familyId;
+    const user = await User.find(username);
+
+    const familyStatus = await user.joinFamily(familyId);
+
+    return res.json({ familyStatus });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+
+/** GET /[username]/families => { families: [ family1, family2, ... ] }
  * Returns list of families given username
+ * 
+ * family is {familyId, familyname, status, isAdmin, primaryFamily, joinDate}
  **/
  router.get("/:username/families", async function (req, res, next) {
   try {  
@@ -119,19 +140,38 @@ const Result = require("../models/result");
   }
 });
 
-
-/** POST /[username]/families/[familyId] => { "joined": familyId }
- * Returns list of families given username
+/** GET /[username]/families/[familyId] => { familyStatus }
+ * 
+ * familyStatus is {familyId, status, isAdmin, primaryFamily, joinDate} 
  **/
- router.post("/:username/families/:familyId", async function (req, res, next) {
+ router.get("/:username/families/:familyId", async function (req, res, next) {
+  try {  
+    const {username, familyId} = req.params;
+    const user = await User.find(username);
+
+    const familyStatus = await user.findFamilyStatus(familyId);
+
+    return res.json({ familyStatus });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/** PATCH /[username]/families/[familyId] {data} => { updatedStatus }
+ *  data may include { status, isAdmin, primaryFamily }
+ * 
+ * updatedStatus is {familyId, status, isAdmin, primaryFamily, joinDate} 
+ **/
+ router.patch("/:username/families/:familyId", async function (req, res, next) {
   try {  
     let {username, familyId} = req.params;
     familyId = +familyId;
     const user = await User.find(username);
+    const {status, isAdmin, primaryFamily} = req.body;
 
-    await user.joinFamily(familyId);
+    const updatedStatus = await user.updateFamilyStatus(familyId, status, isAdmin, primaryFamily);
 
-    return res.json({ joined: familyId });
+    return res.json({ updatedStatus });
   } catch (err) {
     return next(err);
   }

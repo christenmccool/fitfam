@@ -112,7 +112,16 @@ describe("GET /users/:username", function () {
         imageUrl: null,
         bio: null,
         joinDate: moment().format("YYYYMMDD"),
-        families: [{ familyId: testFamilyIds[0], familyname: "fam1" }]
+        families: [
+          { 
+            familyId: testFamilyIds[0], 
+            familyname: "fam1", 
+            status: "active",
+            isAdmin: false,
+            primaryFamily: false,
+            joinDate: moment().format("YYYYMMDD")   
+          }
+        ]
       }
     });
   });
@@ -175,13 +184,42 @@ describe("POST /users/:username/families/:familyId", function () {
   test("works", async function () {
     const resp = await request(app)
         .post(`/users/u2/families/${testFamilyIds[0]}`);
-    expect(resp.body).toEqual({ joined: testFamilyIds[0] });
+    expect(resp.body).toEqual({
+      familyStatus: 
+        { 
+          familyId: testFamilyIds[0], 
+          status: "active",
+          isAdmin: false,
+          primaryFamily: false,
+          joinDate: moment().format("YYYYMMDD")
+        }
+    });
   });
 
   test("not found for no such familyId", async function () {
     const resp = await request(app)
-        .post(`/users/us/families/0`);
+        .post(`/users/u1/families/0`)
+        .send({
+          username: "u1",
+          email: "u1@mail.com",
+          password: "password1",
+          firstName: "First1",
+          lastName: "Last1",
+        });;
     expect(resp.statusCode).toEqual(404);
+  });
+
+  test("bad request if already a member of family", async function () {
+    const resp = await request(app)
+        .post(`/users/u1/families/${testFamilyIds[0]}`)
+        .send({
+          username: "u1",
+          email: "u1@mail.com",
+          password: "password1",
+          firstName: "First1",
+          lastName: "Last1",
+        });
+    expect(resp.statusCode).toEqual(400);
   });
 });
 
@@ -192,8 +230,122 @@ describe("GET /users/:username/families", function () {
     const resp = await request(app).get(`/users/u1/families`);
     expect(resp.body).toEqual({
       families: [
-       { familyId: testFamilyIds[0], familyname: "fam1" }
+       { 
+         familyId: testFamilyIds[0], 
+         familyname: "fam1",
+         status: "active",
+         isAdmin: false,
+         primaryFamily: false,
+         joinDate: moment().format("YYYYMMDD") 
+        }
       ]
     });
+  });
+});
+
+/************************************** Get /users/:username/families/:familyId */
+
+describe("GET /users/:username/families/:familyId", function () {
+  test("works", async function () {
+    const resp = await request(app).get(`/users/u1/families/${testFamilyIds[0]}`);
+    expect(resp.body).toEqual({
+      familyStatus: [
+       { 
+         familyId: testFamilyIds[0], 
+         status: "active",
+         isAdmin: false,
+         primaryFamily: false,
+         joinDate: moment().format("YYYYMMDD") 
+        }
+      ]
+    });
+  });
+
+  test("not found for no such familyId", async function () {
+    const resp = await request(app)
+        .get(`/users/u1/families/0`);
+    expect(resp.statusCode).toEqual(404);
+  });
+
+  test("bad request if not a member of family", async function () {
+    const resp = await request(app)
+        .get(`/users/u1/families/${testFamilyIds[1]}`);
+    expect(resp.statusCode).toEqual(400);
+  });
+});
+
+/************************************** PATCH /users/:username/families/:familyId */
+
+describe("PATCH /users/:username/families/:familyId", function () {
+  test("works for change in status", async function () {
+    const resp = await request(app)
+        .patch(`/users/u1/families/${testFamilyIds[0]}`)
+        .send({
+          "status":"inactive"
+        });
+    expect(resp.body).toEqual({
+      updatedStatus: 
+        { 
+          familyId: testFamilyIds[0], 
+          status: "inactive",
+          isAdmin: false,
+          primaryFamily: false,
+          joinDate: moment().format("YYYYMMDD")
+        }
+    });
+  });
+
+  test("works for change in isAdmin", async function () {
+    const resp = await request(app)
+        .patch(`/users/u1/families/${testFamilyIds[0]}`)
+        .send({
+          "isAdmin":true
+        });
+    expect(resp.body).toEqual({
+      updatedStatus: 
+        { 
+          familyId: testFamilyIds[0], 
+          status: "active",
+          isAdmin: true,
+          primaryFamily: false,
+          joinDate: moment().format("YYYYMMDD")
+        }
+    });
+  });
+
+  test("works for change in primaryFamily", async function () {
+    const resp = await request(app)
+        .patch(`/users/u1/families/${testFamilyIds[0]}`)
+        .send({
+          "primaryFamily":true
+        });
+    expect(resp.body).toEqual({
+      updatedStatus: 
+        { 
+          familyId: testFamilyIds[0], 
+          status: "active",
+          isAdmin: false,
+          primaryFamily: true,
+          joinDate: moment().format("YYYYMMDD")
+        }
+    });
+  });
+
+  test("not found for no such familyId", async function () {
+    const resp = await request(app)
+        .patch(`/users/u1/families/0`)
+        .send({
+          "status":"inactive"
+        });
+    expect(resp.statusCode).toEqual(404);
+  });
+
+  test("bad request if not a member of family", async function () {
+    const resp = await request(app)
+        .patch(`/users/u1/families/${testFamilyIds[1]}`)        
+        .send({
+          "status":"inactive"
+        });
+    expect(resp.statusCode).toEqual(400);
   });
 });

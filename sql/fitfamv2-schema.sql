@@ -27,9 +27,9 @@ CREATE TABLE users_families (
   username text REFERENCES users ON DELETE CASCADE,
   family_id integer REFERENCES families ON DELETE CASCADE,
   family_status curr_status NOT NULL DEFAULT 'active',
-  isAdmin boolean DEFAULT false,
+  is_admin boolean DEFAULT false,
   primary_family boolean DEFAULT false,
-  join_date date,
+  join_date date DEFAULT CURRENT_DATE NOT NULL,
   PRIMARY KEY (username, family_id)
 );
 
