@@ -1,3 +1,9 @@
+CREATE TYPE curr_status AS ENUM (
+  'active',
+  'pending',
+  'inactive'
+);
+
 CREATE TABLE users (
   username text PRIMARY KEY,
   email text NOT NULL UNIQUE,
@@ -20,6 +26,7 @@ CREATE TABLE families (
 CREATE TABLE users_families (
   username text REFERENCES users ON DELETE CASCADE,
   family_id integer REFERENCES families ON DELETE CASCADE,
+  family_status curr_status NOT NULL DEFAULT 'active',
   isAdmin boolean DEFAULT false,
   primary_family boolean DEFAULT false,
   join_date date,

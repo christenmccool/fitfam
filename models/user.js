@@ -209,7 +209,7 @@ class User {
         FROM users_families uf
         JOIN families f
         ON uf.family_id = f.id
-        WHERE username=$1`,
+        WHERE username=$1 AND family_status='active'`,
       [this.username]
     )
     return res.rows;
