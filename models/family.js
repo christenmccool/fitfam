@@ -13,23 +13,6 @@ class Family {
     this.users;
   }
 
-  /** Get list of users given family 
-   * 
-   * Returns [ username1, username2, ... ]
-   **/
-  async getUsers() {
-    const res = await db.query(
-      `SELECT uf.username
-        FROM users_families uf
-        JOIN users u
-        ON uf.username = u.username
-        WHERE family_id=$1`,
-      [this.id]
-    )
-
-    return res.rows.map(ele => ele.username);
-  } 
-
   /** Create new family
    * data must include { familyname }
    * data may include { imageUrl, bio }
@@ -151,6 +134,23 @@ class Family {
 
     if (!family) throw new NotFoundError(`No family: ${this.id}`);
   }
+
+  /** Get list of users given family 
+ * 
+ * Returns [ username1, username2, ... ]
+ **/
+  async getUsers() {
+    const res = await db.query(
+      `SELECT uf.username
+        FROM users_families uf
+        JOIN users u
+        ON uf.username = u.username
+        WHERE family_id=$1`,
+      [this.id]
+    )
+
+    return res.rows.map(ele => ele.username);
+  } 
 }
 
 module.exports = Family;

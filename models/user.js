@@ -16,24 +16,6 @@ class User {
     this.families = families;
   }
 
-  /** Get list of families given user 
-   * 
-   * Returns [ {id1, familyname1}, {id2, familyname2}, ... } ]
-   **/
-  async getFamilies() {
-    const res = await db.query(
-      `SELECT uf.family_id AS "familyId",
-              f.familyname
-        FROM users_families uf
-        JOIN families f
-        ON uf.family_id = f.id
-        WHERE username=$1`,
-      [this.username]
-    )
-
-    return res.rows;
-  } 
-
   /** Create new user
    * data must include { username, password, email, firstName, lastName }
    * data may include { imageUrl, bio }
@@ -118,7 +100,7 @@ class User {
     if (!user) throw new NotFoundError(`No user: ${username}`);
 
     user = new User(user);
-    const families = await user.getFamilies();
+    const families = await user.findFamilies();
     user.families = families;
 
     return user;
@@ -181,6 +163,57 @@ class User {
 
     if (!user) throw new NotFoundError(`No user: ${this.username}`);
   }
+
+  /** Join family  
+   * 
+   * Returns undefined
+   **/
+  async joinFamily(familyId) {
+    const checkFamilyId = await db.query(
+      `SELECT id
+      FROM families
+      WHERE id = $1`, 
+      [familyId]);
+    const family = checkFamilyId.rows[0];
+
+    if (!family) throw new NotFoundError(`No family: ${familyId}`);
+
+    const duplicateCheck = await db.query(
+      `SELECT username, family_id
+        FROM users_families
+        WHERE username = $1 AND family_id=$2`,
+      [this.username, familyId]
+    );
+    if (duplicateCheck.rows[0]) return;
+
+    const res = await db.query(
+      `INSERT INTO users_families 
+        (username, family_id)
+      VALUES ($1, $2)
+      RETURNING 
+        username,
+        family_id AS "familyId"`,
+      [this.username, familyId]
+    );
+    return res.rows;
+  } 
+
+  /** Find list of families given user 
+   * 
+   * Returns [ {id1, familyname1}, {id2, familyname2}, ... } ]
+   **/
+  async findFamilies() {
+    const res = await db.query(
+      `SELECT uf.family_id AS "familyId",
+              f.familyname
+        FROM users_families uf
+        JOIN families f
+        ON uf.family_id = f.id
+        WHERE username=$1`,
+      [this.username]
+    )
+    return res.rows;
+  }   
 }
 
 module.exports = User;

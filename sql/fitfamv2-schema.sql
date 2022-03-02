@@ -20,8 +20,8 @@ CREATE TABLE families (
 CREATE TABLE users_families (
   username text REFERENCES users ON DELETE CASCADE,
   family_id integer REFERENCES families ON DELETE CASCADE,
-  user_role text,
-  primary_family boolean,
+  isAdmin boolean DEFAULT false,
+  primary_family boolean DEFAULT false,
   join_date date,
   PRIMARY KEY (username, family_id)
 );

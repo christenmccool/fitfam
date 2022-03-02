@@ -93,10 +93,44 @@ const Result = require("../models/result");
  router.delete("/:username", async function (req, res, next) {
   try {
     const {username} = req.params;
-    let user = await User.find(username);
+    const user = await User.find(username);
 
     await user.remove();
     return res.json({ deleted: username });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+
+/** GET /[username]/families => { families: [ {id1, familyname1}, {id2, familyname2}, ... } ] }
+ * Returns list of families given username
+ **/
+ router.get("/:username/families", async function (req, res, next) {
+  try {  
+    const {username} = req.params;
+    const user = await User.find(username);
+
+    const familiies = await user.findFamilies();
+
+    return res.json({ familiies });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+
+/** POST /[username]/families/[familyId] => { "joined": familyId }
+ * Returns list of families given username
+ **/
+ router.post("/:username/families/:familyId", async function (req, res, next) {
+  try {  
+    const {username, familyId} = req.params;
+    const user = await User.find(username);
+
+    await user.joinFamily(familyId);
+
+    return res.json({ joined: familyId });
   } catch (err) {
     return next(err);
   }
@@ -137,7 +171,6 @@ const Result = require("../models/result");
     return next(err);
   }
 });
-
 
 
 module.exports = router;
