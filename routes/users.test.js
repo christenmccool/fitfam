@@ -10,9 +10,7 @@ const {
   commonBeforeEach,
   commonAfterEach,
   commonAfterAll,
-  testFamilyIds,
-  testWorkoutIds,
-  testResultIds
+  testFamilyIds
 } = require("./_testCommon");
 
 beforeAll(commonBeforeAll);
@@ -114,7 +112,7 @@ describe("GET /users/:username", function () {
         imageUrl: null,
         bio: null,
         joinDate: moment().format("YYYYMMDD"),
-        families: []
+        families: [{ familyId: testFamilyIds[0], familyname: "fam1" }]
       }
     });
   });
@@ -168,5 +166,34 @@ describe("DELETE /users/:username", function () {
   test("not found if user missing", async function () {
     const resp = await request(app).delete(`/users/nope`);
     expect(resp.statusCode).toEqual(404);
+  });
+});
+
+/************************************** POST /users/:username/families/:familyId */
+
+describe("POST /users/:username/families/:familyId", function () {
+  test("works", async function () {
+    const resp = await request(app)
+        .post(`/users/u2/families/${testFamilyIds[0]}`);
+    expect(resp.body).toEqual({ joined: testFamilyIds[0] });
+  });
+
+  test("not found for no such familyId", async function () {
+    const resp = await request(app)
+        .post(`/users/us/families/0`);
+    expect(resp.statusCode).toEqual(404);
+  });
+});
+
+/************************************** Get /users/:username/families */
+
+describe("GET /users/:username/families", function () {
+  test("works", async function () {
+    const resp = await request(app).get(`/users/u1/families`);
+    expect(resp.body).toEqual({
+      families: [
+       { familyId: testFamilyIds[0], familyname: "fam1" }
+      ]
+    });
   });
 });

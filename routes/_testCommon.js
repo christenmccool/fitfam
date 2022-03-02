@@ -18,7 +18,7 @@ async function commonBeforeAll() {
   await db.query("DELETE FROM results");
   await db.query("DELETE FROM comments");
 
-  await User.create(
+  const user1 = await User.create(
     {
       username: "u1",
       email: "u1@mail.com",
@@ -57,6 +57,8 @@ async function commonBeforeAll() {
   );
   testFamilyIds.push(family1.id);
   testFamilyIds.push(family2.id);
+
+  user1.joinFamily(testFamilyIds[0]);
 
   const workout1 = await Workout.create(
     {

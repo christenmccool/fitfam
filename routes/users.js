@@ -111,9 +111,9 @@ const Result = require("../models/result");
     const {username} = req.params;
     const user = await User.find(username);
 
-    const familiies = await user.findFamilies();
+    const families = await user.findFamilies();
 
-    return res.json({ familiies });
+    return res.json({ families });
   } catch (err) {
     return next(err);
   }
@@ -125,7 +125,8 @@ const Result = require("../models/result");
  **/
  router.post("/:username/families/:familyId", async function (req, res, next) {
   try {  
-    const {username, familyId} = req.params;
+    let {username, familyId} = req.params;
+    familyId = +familyId;
     const user = await User.find(username);
 
     await user.joinFamily(familyId);
