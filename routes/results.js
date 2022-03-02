@@ -14,8 +14,9 @@ const Result = require("../models/result");
  *
  * data must include { username, familyId, workoutId }
  * data may include { score, notes }
+ * 
+ * result is { id, username, familyId, workoutId, score, notes, dateCompleted }
  **/
-
  router.post("/", async function (req, res, next) {
   try {
     const result = await Result.create(req.body);

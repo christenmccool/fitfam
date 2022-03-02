@@ -10,6 +10,7 @@ const workoutRoutes = require("./routes/workouts");
 const resultRoutes = require("./routes/results");
 const userRoutes = require("./routes/users");
 const famiyRoutes = require("./routes/families");
+const commentRoutes = require("./routes/comments");
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.use("/workouts", workoutRoutes);
 app.use("/results", resultRoutes);
 app.use("/users", userRoutes);
 app.use("/families", famiyRoutes);
+app.use("/comments", commentRoutes);
 
 
 /** 404 handler */

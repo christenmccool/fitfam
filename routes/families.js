@@ -15,8 +15,9 @@ const Result = require("../models/result");
  *
  * data must include { familyname }
  * data may include { imageUrl, bio }
+ * 
+ * family is { id, familyname, image_url, bio, creationDate }
  **/
-
  router.post("/", async function (req, res, next) {
   try {
     const family = await Family.create(req.body);

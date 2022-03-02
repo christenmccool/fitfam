@@ -15,6 +15,8 @@ const Result = require("../models/result");
  *
  * data must include { username, password, email, firstName, lastName }
  * data may include { imageUrl, bio }
+ * 
+ * user is { username, email, firstName, lastName, imageUrl, bio, joinDate }
  **/
 
  router.post("/", async function (req, res, next) {

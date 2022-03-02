@@ -15,8 +15,9 @@ const Result = require("../models/result");
 /** POST / { data }  => { workout }
  *
  * data may include { swId, name, description, category, scoreType, date }
+ *  
+ * workout is { id, swId, name, description, category, score_type, date }
  **/
-
  router.post("/", async function (req, res, next) {
   try {
     const workout = await Workout.create(req.body);
@@ -38,7 +39,7 @@ const Result = require("../models/result");
  * - movementIds
  * 
  * Default with no filter is today's date
- */
+ **/
 router.get("/", async function (req, res, next) {
   try {  
     let {date, category} = req.query;

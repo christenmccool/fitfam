@@ -18,11 +18,12 @@ CREATE TABLE families (
 );
 
 CREATE TABLE users_families (
-  username text NOT NULL REFERENCES users ON DELETE CASCADE,
-  family_id integer NOT NULL REFERENCES families ON DELETE CASCADE,
+  username text REFERENCES users ON DELETE CASCADE,
+  family_id integer REFERENCES families ON DELETE CASCADE,
   user_role text,
   primary_family boolean,
-  join_date date
+  join_date date,
+  PRIMARY KEY (username, family_id)
 );
 
 CREATE TABLE workouts (
@@ -40,7 +41,7 @@ ALTER SEQUENCE workouts_id_seq RESTART WITH 450;
 CREATE TABLE results (
   id serial PRIMARY KEY,
   username text NOT NULL REFERENCES users ON DELETE CASCADE,
-  family_id integer REFERENCES families ON DELETE CASCADE, 
+  family_id integer NOT NULL REFERENCES families ON DELETE CASCADE, 
   workout_id integer NOT NULL REFERENCES workouts ON DELETE CASCADE,
   score integer,
   notes text,
@@ -62,8 +63,8 @@ CREATE TABLE movements (
 );   
 
 CREATE TABLE workouts_movements (
-  wo_id integer NOT NULL REFERENCES workouts ON DELETE CASCADE,
-  movement_id text NOT NULL REFERENCES movements ON DELETE CASCADE,
+  wo_id integer REFERENCES workouts ON DELETE CASCADE,
+  movement_id text REFERENCES movements ON DELETE CASCADE,
   PRIMARY KEY (wo_id, movement_id)
 );   
 

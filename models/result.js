@@ -1,11 +1,9 @@
 /** Result class. */
 
-const moment = require("moment");
-
 const db = require("../db");
 const { NotFoundError } = require("../expressError");
 
-const { buildResultQuery } = require("../helpers/sql");
+const { buildResultQuery } = require("../utils/sql");
 
 class Result {
   constructor({ id, username, familyId, workoutId, score, notes, dateCompleted }) {
@@ -15,7 +13,7 @@ class Result {
     this.workoutId = workoutId;
     this.score = score;
     this.notes = notes;
-    this.date_completed = dateCompleted;
+    this.dateCompleted = dateCompleted;
   }
 
   /** Create new result
@@ -25,7 +23,6 @@ class Result {
    * Returns { id, username, familyId, workoutId, score, notes, dateCompleted }
    **/
   static async create({ username, familyId, workoutId, score, notes }) {
-
     const res = await db.query(
       `INSERT INTO results 
         (username, family_id, workout_id, score, notes)
@@ -36,20 +33,19 @@ class Result {
                   workout_id AS "workoutId", 
                   score, 
                   notes,
-                  TO_CHAR(date_completed, 'YYYYMMDD') AS "dateCompleted"`
+                  TO_CHAR(date_completed, 'YYYYMMDD') AS "dateCompleted"`,
       [username, familyId, workoutId, score, notes]
     );
 
     const result = res.rows[0];
 
-    return result;
+    return new Result(result);  
   }
   
   /** Find all results given a workoutId and/or username and/or familyId 
    *
    * Returns [{ id, username, familyId, workoutId, score, notes, dateCompleted }, ...]
    * */
-
    static async findAll(workoutId, username, familyId) {
     const {query, data} = buildResultQuery(workoutId, username, familyId);
     const res = await db.query(query, data);
@@ -91,10 +87,10 @@ class Result {
    *
    * Throws NotFoundError if not found.
    */
-  async update({ score, notes, date }) {
+  async update({ score, notes, dateCompleted }) {
     let newScore = score ? score : this.score;
     let newNotes = notes ? notes : this.notes;
-    let newDate = date ? date : this.date;
+    let newDate = dateCompleted ? dateCompleted : this.dateCompleted;
 
     const res = await db.query(
       `UPDATE results 
@@ -122,7 +118,7 @@ class Result {
   /** Delete result 
    * 
    * Returns undefined
-   **/
+   */
   async remove() {
     let res = await db.query(
       `DELETE

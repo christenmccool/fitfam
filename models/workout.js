@@ -5,7 +5,7 @@ const axios = require("axios");
 const db = require("../db");
 const { NotFoundError } = require("../expressError");
 
-const { buildWorkoutQuery } = require("../helpers/sql");
+const { buildWorkoutQuery } = require("../utils/sql");
 
 const API_KEY = require("../secret");
 const SUGARWOD_BASE_URL = "https://api.sugarwod.com/v2";
@@ -51,7 +51,7 @@ class Workout {
    * Filters are date OR category and/or movementIds
    * 
    * Returns [ {id1, name1}, {id2, name2}, ... } ]
-   * */
+   **/
   static async findAll(date, category, movementIds) {
     let workoutList = [];
 

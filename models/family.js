@@ -46,7 +46,7 @@ class Family {
                  familyname, 
                  image_url AS "imageUrl", 
                  bio, 
-                 creation_date AS "creationDate"`,
+                 TO_CHAR(creation_date, 'YYYYMMDD') AS "creationDate"`,
       [familyname, imageUrl, bio],
     );
 
@@ -65,7 +65,7 @@ class Family {
               familyname, 
               image_url AS "imageUrl", 
               bio, 
-              creation_date AS "creationDate"
+              TO_CHAR(creation_date, 'YYYYMMDD') AS "creationDate"
        FROM families`
     );
     
@@ -84,7 +84,7 @@ class Family {
             familyname, 
             image_url AS "imageUrl", 
             bio, 
-            creation_date AS "creationDate"
+            TO_CHAR(creation_date, 'YYYYMMDD') AS "creationDate"
       FROM families
       WHERE id = $1`,
       [id]
