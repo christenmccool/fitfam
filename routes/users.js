@@ -81,6 +81,7 @@ const usersFamiliesUpdateSchema = require("../schemas/usersFamiliesUpdate.json")
  *
  * Data can include:
  *   { email, password, firstName, lastName, imageUrl, bio }
+ * Must include at least one property
  *
  * Returns { username, email, firstName, lastName, imageUrl, bio, joinDate }
  **/

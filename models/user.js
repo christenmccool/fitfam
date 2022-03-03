@@ -112,7 +112,7 @@ class User {
    *
    * data can include:
    *   { email, password, firstName, lastName, imageUrl, bio }
-   * At least one field is required
+   * At least one property is required
    *
    * Returns { email, username, email, firstName, lastName, imageUrl, bio, joinDate }
    *
@@ -315,7 +315,7 @@ class User {
           TO_CHAR(join_date, 'YYYYMMDD') AS "joinDate"`,        
         [...valuesArr, this.username, familyId]
     );
-    
+
     return res.rows[0];
   }
 }
