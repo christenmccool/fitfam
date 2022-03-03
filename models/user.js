@@ -1,4 +1,5 @@
 /** User class. */
+const moment = require("moment");
 
 const db = require("../db");
 const { BadRequestError, NotFoundError } = require("../expressError");
@@ -6,50 +7,51 @@ const { BadRequestError, NotFoundError } = require("../expressError");
 const { buildUpdateQuery } = require("../utils/sql");
 
 class User {
-  constructor({ username, email, password, firstName, lastName, imageUrl, bio, joinDate, families }) {
-    this.username = username;
+  constructor({ id, email, password, firstName, lastName, imageUrl, bio, createDate, modifyDate, families }) {
+    this.id = id;
     this.email = email;
     this.password = password;
     this.firstName = firstName;
     this.lastName = lastName;
     this.imageUrl = imageUrl;
     this.bio = bio;
-    this.joinDate = joinDate;
+    this.createDate = createDate;
+    this.modifyDate = modifyDate;
     this.families = families;
   }
 
   /** Create new user
-   * data must include { username, password, email, firstName, lastName }
+   * data must include { email, password, firstName, lastName }
    * data may include { imageUrl, bio }
    *
-   * Returns { username, email, firstName, lastName, imageUrl, bio, joinDate }
+   * Returns { id, email, firstName, lastName, imageUrl, bio, createDate, modifyDate }
    *
-   * Throws BadRequestError on duplicates.
+   * Throws BadRequestError on duplicates
    **/
-  static async create({ username, email, password, firstName, lastName, imageUrl, bio }) {
+  static async create({ email, password, firstName, lastName, imageUrl, bio }) {
     const duplicateCheck = await db.query(
-      `SELECT username
+      `SELECT email
         FROM users
-        WHERE username = $1`,
-      [username]
+        WHERE email = $1`,
+      [email]
     );
 
     if (duplicateCheck.rows[0]) {
-      throw new BadRequestError(`Duplicate username: ${username}`);
+      throw new BadRequestError(`Duplicate email: ${email}`);
     }
 
     const result = await db.query(
       `INSERT INTO users
-          (username, email, user_password, first_name, last_name, image_url, bio)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-        RETURNING username, 
+          (email, user_password, first_name, last_name, image_url, bio)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING id, 
                   email,
                   first_name AS "firstName", 
                   last_name AS "lastName", 
                   image_url AS "imageUrl",
                   bio,
-                  TO_CHAR(join_date, 'YYYYMMDD') AS "joinDate"`,
-      [username, email, password, firstName, lastName, imageUrl, bio]
+                  TO_CHAR(create_date, 'YYYYMMDD') AS "createDate"`,
+      [email, password, firstName, lastName, imageUrl, bio]
     );
 
     const user = result.rows[0];
@@ -57,49 +59,52 @@ class User {
     return new User(user);
   }
 
-  /** Find all users.
+  /** Find all users
    *
-   * Returns [{ username, email, firstName, lastName, imageUrl, bio, joinDate }, ...]
+   * Returns [{ id, email, firstName, lastName, imageUrl, bio, createDate, modifyDate }, ...]
    **/
   static async findAll() {
     const res = await db.query(
-      `SELECT username, 
+      `SELECT id, 
               email, 
               first_name AS "firstName", 
               last_name AS "lastName", 
               image_url AS "imageUrl",
               bio,
-              TO_CHAR(join_date, 'YYYYMMDD') AS "joinDate"
+              TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
+              TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate"
         FROM users`
     );
     
     return res.rows.map(ele => new User(ele));
   }
 
-  /** Given a username, return data about user, including families
+  /** Given a user id, return data about user, including families
    *
-   * Returns { username, email, firstName, lastName, imageUrl, bio, joinDate, families }
-   * families is [ {id1, familyname1, status1}, {id2, familyname2, status2}, ... } ]
+   * Returns { is, email, firstName, lastName, imageUrl, bio, createDate, modifyDate, families }
+   * families is [ family1, family2, ... ]
+   *    where family is { familyId, familyname, status, isAdmin, primaryFamily, createDate, modifyDate }
    *
    * Throws NotFoundError if not found.
    **/
-   static async find(username) {
+   static async find(id) {
     const res = await db.query(
-      `SELECT username, 
-                email, 
-                first_name AS "firstName", 
-                last_name AS "lastName", 
-                image_url AS "imageUrl",
-                bio,
-                TO_CHAR(join_date, 'YYYYMMDD') AS "joinDate"
+      `SELECT id, 
+              email, 
+              first_name AS "firstName", 
+              last_name AS "lastName", 
+              image_url AS "imageUrl",
+              bio,
+              TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
+              TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate"
         FROM users
-        WHERE username = $1`,
-      [username]
+        WHERE id = $1`,
+      [id]
     );
 
     let user = res.rows[0];
 
-    if (!user) throw new NotFoundError(`No user: ${username}`);
+    if (!user) throw new NotFoundError(`No user: ${id}`);
 
     user = new User(user);
     const families = await user.findFamilies();
@@ -111,36 +116,37 @@ class User {
   /** Update user data 
    *
    * data can include:
-   *   { email, password, firstName, lastName, imageUrl, bio }
+   *   { password, firstName, lastName, imageUrl, bio }
    * At least one property is required
    *
-   * Returns { email, username, email, firstName, lastName, imageUrl, bio, joinDate }
+   * Returns { id, username, email, firstName, lastName, imageUrl, bio, createDate, modifyDate }
    *
    * Throws NotFoundError if not found.
    **/
   async update(data) {
     const jstoSql = {
-      email: "email",
       password: "user_password",
       firstName: "first_name",
       lastName: "last_name",
       imageUrl: "image_url",
       bio: "bio"
     }
-    const {setClause, valuesArr} = buildUpdateQuery(data, jstoSql);
+    let {setClause, valuesArr} = buildUpdateQuery(data, jstoSql);
+    setClause += `, modify_date=CURRENT_TIMESTAMP `;
 
     const res = await db.query(
       `UPDATE users 
         ${setClause}
-        WHERE username = $${valuesArr.length + 1}
-        RETURNING username,
+        WHERE id = $${valuesArr.length + 1}
+        RETURNING id, 
                   email,
                   first_name AS "firstName",
                   last_name AS "lastName",
                   image_url AS "imageUrl",
                   bio,
-                  TO_CHAR(join_date, 'YYYYMMDD') AS "joinDate"`,        
-      [...valuesArr, this.username]
+                  TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
+                  TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate"`,                
+      [...valuesArr, this.id]
     );
 
     const user = res.rows[0];
@@ -158,19 +164,19 @@ class User {
     let res = await db.query(
       `DELETE
         FROM users
-        WHERE username = $1
-        RETURNING username`,
-      [this.username],
+        WHERE id = $1
+        RETURNING id`,
+      [this.id],
     );
     const user = res.rows[0];
 
-    if (!user) throw new NotFoundError(`No user: ${this.username}`);
+    if (!user) throw new NotFoundError(`No user: ${this.id}`);
   }
 
 
   /** Join family 
    *
-   * Returns {familyId, status, isAdmin, primaryFamily, joinDate}
+   * Returns {familyId, status, isAdmin, primaryFamily, createDate}
    * where status is default value of "active"
    **/
   async joinFamily(familyId) {
@@ -184,10 +190,10 @@ class User {
     if (!family) throw new NotFoundError(`No family: ${familyId}`);
 
     const duplicateCheck = await db.query(
-      `SELECT username, family_id
+      `SELECT user_id, family_id
         FROM users_families
-        WHERE username = $1 AND family_id=$2`,
-      [this.username, familyId]
+        WHERE user_id = $1 AND family_id=$2`,
+      [this.id, familyId]
     );
     if (duplicateCheck.rows[0]) {
       throw new BadRequestError(`Already a member of family: ${familyId}`);
@@ -195,15 +201,15 @@ class User {
     
     const res = await db.query(
       `INSERT INTO users_families 
-          (username, family_id)
+          (user_id, family_id)
         VALUES ($1, $2)
         RETURNING 
           family_id AS "familyId",
           family_status AS "status",
           is_admin AS "isAdmin",
           primary_family AS "primaryFamily",
-          TO_CHAR(join_date, 'YYYYMMDD') AS "joinDate"`,
-      [this.username, familyId]
+          TO_CHAR(create_date, 'YYYYMMDD') AS "createDate"`,
+      [this.id, familyId]
     );
 
     return res.rows[0];
@@ -211,28 +217,29 @@ class User {
 
   /** Find list of families given user 
    * Returns [ family1, family2, ... ]
-   * family is {familyId, familyname, status, isAdmin, primaryFamily, joinDate}
+   * family is { familyId, familyname, status, isAdmin, primaryFamily, createDate, modifyDate }
    **/
   async findFamilies() {
     const res = await db.query(
       `SELECT uf.family_id AS "familyId",
-              f.familyname,
+              f.family_name AS "familyName",
               uf.family_status AS "status",
               uf.is_admin AS "isAdmin",
               uf.primary_family AS "primaryFamily",
-              TO_CHAR(join_date, 'YYYYMMDD') AS "joinDate"
+              TO_CHAR(uf.create_date, 'YYYYMMDD') AS "createDate",
+              TO_CHAR(uf.modify_date, 'YYYYMMDD') AS "modifyDate"
         FROM users_families uf
         JOIN families f
         ON uf.family_id = f.id
-        WHERE username=$1`,
-      [this.username]
+        WHERE uf.user_id=$1`,
+      [this.id]
     )
     return res.rows;
   }   
 
   /** Find data about status and role of user in family 
    * 
-   * Returns {familyId, status, isAdmin, primaryFamily, joinDate}
+   * Returns {familyId, status, isAdmin, primaryFamily, createDate, modifyDate}
    **/
   async findFamilyStatus(familyId) {
     const checkFamilyId = await db.query(
@@ -247,8 +254,8 @@ class User {
     const checkInFamily = await db.query(
       `SELECT family_id
         FROM users_families
-        WHERE username=$1 AND family_id=$2`,
-      [this.username, familyId]
+        WHERE user_id=$1 AND family_id=$2`,
+      [this.id, familyId]
     )
     const family2 = checkInFamily.rows[0];
 
@@ -259,10 +266,11 @@ class User {
               family_status AS "status",
               is_admin AS "isAdmin",
               primary_family AS "primaryFamily",
-              TO_CHAR(join_date, 'YYYYMMDD') AS "joinDate"
+              TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
+              TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate"
         FROM users_families
-        WHERE username=$1 AND family_id=$2`,
-      [this.username, familyId]
+        WHERE user_id=$1 AND family_id=$2`,
+      [this.id, familyId]
     )
     return res.rows[0];
   }  
@@ -289,8 +297,8 @@ class User {
               is_admin AS "isAdmin",
               primary_family AS "primaryFamily"
         FROM users_families
-        WHERE username=$1 AND family_id=$2`,
-      [this.username, familyId]
+        WHERE user_id=$1 AND family_id=$2`,
+      [this.id, familyId]
     )
     const family2 = checkInFamily.rows[0];
 
@@ -301,21 +309,22 @@ class User {
       isAdmin: "is_admin",
       primaryFamily: "primary_family"
     }
-    const {setClause, valuesArr} = buildUpdateQuery(data, jstoSql);
+    let {setClause, valuesArr} = buildUpdateQuery(data, jstoSql);
+    setClause += `, modify_date=CURRENT_TIMESTAMP `;
 
     const res = await db.query(
       `UPDATE users_families 
         ${setClause}
-        WHERE username=$${valuesArr.length + 1} AND family_id=$${valuesArr.length + 2}
+        WHERE user_id=$${valuesArr.length + 1} AND family_id=$${valuesArr.length + 2}
         RETURNING 
           family_id AS "familyId", 
           family_status AS "status",
           is_admin AS "isAdmin",
           primary_family AS "primaryFamily",
-          TO_CHAR(join_date, 'YYYYMMDD') AS "joinDate"`,        
-        [...valuesArr, this.username, familyId]
+          TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
+          TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate"`,        
+        [...valuesArr, this.id, familyId]
     );
-
     return res.rows[0];
   }
 }

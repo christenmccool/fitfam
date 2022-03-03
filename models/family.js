@@ -3,52 +3,55 @@
 const db = require("../db");
 const { NotFoundError } = require("../expressError");
 
+const { buildUpdateQuery } = require("../utils/sql");
+
 class Family {
-  constructor({ id, familyname, imageUrl, bio, creationDate, users }) {
+  constructor({ id, familyName, imageUrl, bio, createDate, modifyDate, users }) {
     this.id = id;
-    this.familyname = familyname;
+    this.familyName = familyName;
     this.imageUrl = imageUrl;
     this.bio = bio;
-    this.creationDate = creationDate;
+    this.createDate = createDate;
+    this.modifyDate = modifyDate;
     this.users;
   }
 
   /** Create new family
-   * data must include { familyname }
+   * data must include { familyName }
    * data may include { imageUrl, bio }
    * 
-   * Returns { id, familyname, image_url, bio, creationDate }
+   * Returns { id, familyName, imageUrl, bio, createDate }
    **/
-    static async create({ familyname, imageUrl, bio }) {
-
+  static async create({ familyName, imageUrl, bio }) {
     const res = await db.query(
       `INSERT INTO families 
-        (familyname, image_url, bio)
+        (family_name, image_url, bio)
        VALUES ($1, $2, $3)
        RETURNING id, 
-                 familyname, 
+                 family_name AS "familyName", 
                  image_url AS "imageUrl", 
                  bio, 
-                 TO_CHAR(creation_date, 'YYYYMMDD') AS "creationDate"`,
-      [familyname, imageUrl, bio],
+                 TO_CHAR(create_date, 'YYYYMMDD') AS "createDate"`,
+      [familyName, imageUrl, bio],
     );
 
     const family = res.rows[0];
 
-    return family;
+    return new Family(family);
   }
   
   /** Find all families
    *
-   * Returns [{ id, familyname, image_url, bio, creationDate }, ...]
+   * Returns [{ id, familyName, imageUrl, bio, createDate, modifyDate }, ...]
    * */
   static async findAll() {
     const res = await db.query(
       `SELECT id, 
-              familyname, 
+              family_name AS "familyName", 
               image_url AS "imageUrl", 
               bio, 
-              TO_CHAR(creation_date, 'YYYYMMDD') AS "creationDate"
+              TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
+              TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate"
        FROM families`
     );
     
@@ -57,17 +60,20 @@ class Family {
 
   /** Given a family id, return data about family
    *
-   * Returns [{ id, familyname, image_url, bio, creationDate }, ...]
+   * Returns { id, familyName, imageUrl, bio, createDate, modifyDate, users }
+   * 
+   * users is [ userId1, userId2, ... } ]
    *
    * Throws NotFoundError if not found.
    **/
   static async find(id) {
   const res = await db.query(
     `SELECT id, 
-            familyname, 
+            family_name AS "familyName", 
             image_url AS "imageUrl", 
             bio, 
-            TO_CHAR(creation_date, 'YYYYMMDD') AS "creationDate"
+            TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
+            TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate"
       FROM families
       WHERE id = $1`,
       [id]
@@ -85,31 +91,52 @@ class Family {
 
   /** Update family data 
    *
-   * Data can include:
-   *   { familyname, imageUrl, bio }
+   * Data may include:
+   *   { familyName, imageUrl, bio }
    *
-   * Returns { id, familyname, image_url, bio, creationDate }
+   * Returns { id, familyName, imageUrl, bio, createDate, modifyDate }
    *
    * Throws NotFoundError if not found.
    */
-  async update({ familyname, imageUrl, bio }) {
-    let newFamilyname = familyname ? familyname : this.familyname;
-    let newImageUrl = imageUrl ? imageUrl : this.imageUrl;
-    let newBio = bio ? bio : this.bio;
+  async update(data) {
+    const jstoSql = {
+      familyName: "family_name",
+      imageUrl: "image_url",
+      bio: "bio"
+    }
+    let {setClause, valuesArr} = buildUpdateQuery(data, jstoSql);
+    setClause += `, modify_date=CURRENT_TIMESTAMP `;
 
     const res = await db.query(
       `UPDATE families 
-        SET familyname=$1,
-            image_url=$2, 
-            bio=$3
-        WHERE id = $4
+        ${setClause}
+        WHERE id = $${valuesArr.length + 1}
         RETURNING id,
-                  familyname,
+                  family_name AS "familyName",
                   image_url AS "imageUrl",
                   bio,
-                  TO_CHAR(creation_date, 'YYYYMMDD') AS "creationDate"`,        
-      [newFamilyname, newImageUrl, newBio, this.id]
+                  TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",  
+                  TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate"`,              
+      [...valuesArr, this.id]
     );
+
+    // let newFamilyname = familyname ? familyname : this.familyname;
+    // let newImageUrl = imageUrl ? imageUrl : this.imageUrl;
+    // let newBio = bio ? bio : this.bio;
+
+    // const res = await db.query(
+    //   `UPDATE families 
+    //     SET family_name=$1,
+    //         image_url=$2, 
+    //         bio=$3
+    //     WHERE id = $4
+    //     RETURNING id,
+    //               familyname,
+    //               image_url AS "imageUrl",
+    //               bio,
+    //               TO_CHAR(creation_date, 'YYYYMMDD') AS "creationDate"`,        
+    //   [newFamilyname, newImageUrl, newBio, this.id]
+    // );
 
     const family = res.rows[0];
 
@@ -137,19 +164,19 @@ class Family {
 
   /** Get list of users given family 
  * 
- * Returns [ username1, username2, ... ]
+ * Returns [ userId1, userId2, ... ]
  **/
   async getUsers() {
     const res = await db.query(
-      `SELECT uf.username
+      `SELECT u.id AS "userId"
         FROM users_families uf
         JOIN users u
-        ON uf.username = u.username
+        ON uf.user_id = u.id
         WHERE family_id=$1`,
       [this.id]
     )
 
-    return res.rows.map(ele => ele.username);
+    return res.rows.map(ele => ele.userId);
   } 
 }
 

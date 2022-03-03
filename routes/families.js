@@ -4,22 +4,31 @@
 
 const express = require("express");
 
+const jsonschema = require("jsonschema");
 const router = express.Router();
+
 const { BadRequestError } = require("../expressError");
 
 const Family = require("../models/family");
-const Result = require("../models/result");
+const familyNewSchema = require("../schemas/familyNew.json");
+const familyUpdateSchema = require("../schemas/familyUpdate.json");
 
 
 /** POST / { data }  => { family }
  *
- * data must include { familyname }
+ * data must include { familyName }
  * data may include { imageUrl, bio }
  * 
- * family is { id, familyname, image_url, bio, creationDate }
+ * family is { id, familyname, imageUrl, bio, createDate }
  **/
  router.post("/", async function (req, res, next) {
   try {
+    const validator = jsonschema.validate(req.body, familyNewSchema);
+    if (!validator.valid) {
+      const errs = validator.errors.map(e => e.stack);
+      throw new BadRequestError(errs);
+    }
+
     const family = await Family.create(req.body);
     return res.status(201).json({ family });
   } catch (err) {
@@ -31,7 +40,7 @@ const Result = require("../models/result");
 /** GET / => { families: [ { family1, family2, ... } ] }
  * Returns a list of families
  * 
- * family is { id, familyname, image_url, bio, creationDate }
+ * family is { id, familyName, image_url, bio, createDate, modifyDate }
  **/
  router.get("/", async function (req, res, next) {
   try {  
@@ -47,9 +56,9 @@ const Result = require("../models/result");
 /** GET /[id] => { family }
  * Returns family data given family id
  * 
- * family is { id, familyname, image_url, bio, creationDate, users }
+ * family is id, familyName, imageUrl, bio, createDate, modifyDate, users }
  * 
- * users is [ username1, username2, ... } ]
+ * users is [ userId1, userId2, ... } ]
  **/
  router.get("/:id", async function (req, res, next) {
   try {  
@@ -67,12 +76,18 @@ const Result = require("../models/result");
 /** PATCH /[id] { data } => { family }
  *
  * Data can include:
- *   { familyname, imageUrl, bio }
+ *   { familyName, imageUrl, bio }
  *
- * Returns { id, familyname, image_url, bio, creationDate }
+ * Returns { id, familyName, imageUrl, bio, createDate, modifyDate }
  **/
  router.patch("/:id", async function (req, res, next) {
   try {
+    const validator = jsonschema.validate(req.body, familyUpdateSchema);
+    if (!validator.valid) {
+      const errs = validator.errors.map(e => e.stack);
+      throw new BadRequestError(errs);
+    }
+
     const {id} = req.params;
     let family = await Family.find(id);
 
@@ -94,42 +109,6 @@ const Result = require("../models/result");
 
     await family.remove();
     return res.json({ deleted: id });
-  } catch (err) {
-    return next(err);
-  }
-});
-
-
-/** GET /[id]/results => { results: [ { result1, result2, ... } ] }
- * Returns list of results given family id
- * 
- * result is { id, username, familyId, workoutId, score, notes, dateCompleted }
- **/
- router.get("/:id/results", async function (req, res, next) {
-  try {  
-    const {id} = req.params;
-
-    const results = await Result.findAll(null, null, id);
-
-    return res.json({ results });
-  } catch (err) {
-    return next(err);
-  }
-});
-
-
-/** GET /[familyId]/workouts/[workoutId]/results => { results: [ { result1, result2, ... } ] }
- * Returns list of results given family id and workout id
- * 
- * result is { id, username, familyId, workoutId, score, notes, dateCompleted }
- **/
- router.get("/:familyId/workouts/:workoutId/results", async function (req, res, next) {
-  try {  
-    const {familyId, workoutId} = req.params;
-
-    const results = await Result.findAll(workoutId, null, familyId);
-
-    return res.json({ results });
   } catch (err) {
     return next(err);
   }

@@ -2,7 +2,9 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "http://example.com/root.json",
   "type": "object",
-  "minProperties": 1,
+  "required": [
+    "familyName"
+  ],
   "properties": {
     "familyName": {
       "type": "string",

@@ -10,6 +10,7 @@ const {
   commonBeforeEach,
   commonAfterEach,
   commonAfterAll,
+  testUserIds,
   testFamilyIds
 } = require("./_testCommon");
 
@@ -25,7 +26,6 @@ describe("POST /users", function () {
   test("works", async function () {
     const resp = await request(app).post("/users")
         .send({
-          username: "u-new",
           email: "new@mail.com",
           password: "password-new",
           firstName: "First-new",
@@ -34,13 +34,16 @@ describe("POST /users", function () {
     expect(resp.statusCode).toEqual(201);
     expect(resp.body).toEqual({
       user: {
-        username: "u-new",
+        id: expect.any(Number),
         email: "new@mail.com",
         firstName: "First-new",
         lastName: "Last-new",
         imageUrl: null,
         bio: null,
-        joinDate: moment().format("YYYYMMDD")
+        createDate: moment().format("YYYYMMDD"),
+        password: undefined,
+        modifyDate: undefined,
+        families: undefined
       }
     });
   });
@@ -49,7 +52,6 @@ describe("POST /users", function () {
     const resp = await request(app)
         .post("/users")
         .send({
-          username: "u1",
           email: "u1@mail.com",
           password: "password1",
           firstName: "First1",
@@ -62,7 +64,7 @@ describe("POST /users", function () {
     const resp = await request(app)
         .post("/users")
         .send({
-          username: "u-new",
+          email: "u1@mail.com"
         });
     expect(resp.statusCode).toEqual(400);
   });
@@ -71,7 +73,6 @@ describe("POST /users", function () {
     const resp = await request(app)
         .post("/users")
         .send({
-          username: "u-new",
           email: "new@mail.com",
           password: "password-new",
           firstName: "First-new",
@@ -85,7 +86,6 @@ describe("POST /users", function () {
     const resp = await request(app)
         .post("/users")
         .send({
-          username: "u-new",
           email: "not-an-email",
           password: "password-new",
           firstName: "First-new",
@@ -98,7 +98,6 @@ describe("POST /users", function () {
     const resp = await request(app)
         .post("/users")
         .send({
-          username: "u-new",
           email: "new@mail.com",
           password: "new",
           firstName: "First-new",
@@ -116,59 +115,71 @@ describe("GET /users", function () {
     expect(resp.body).toEqual({
       users: [
         {
-          username: "u1",
+          id: testUserIds[0],
           email: "u1@mail.com",
           firstName: "First1",
           lastName: "Last1",
           imageUrl: null,
           bio: null,
-          joinDate: moment().format("YYYYMMDD")
+          createDate: moment().format("YYYYMMDD"),
+          modifyDate: null,
+          password: undefined,
+          families: undefined
         },
         {
-          username: "u2",
+          id: testUserIds[1],
           email: "u2@mail.com",
           firstName: "First2",
           lastName: "Last2",
           imageUrl: "user2image.com",
           bio: null,
-          joinDate: moment().format("YYYYMMDD")
+          createDate: moment().format("YYYYMMDD"),
+          modifyDate: null,
+          password: undefined,
+          families: undefined
         },
         {
-          username: "u3",
+          id: testUserIds[2],
           email: "u3@mail.com",
           firstName: "First3",
           lastName: "Last3",
           imageUrl: "user3image.com",
           bio: "Bio of u3",
-          joinDate: moment().format("YYYYMMDD")
+          createDate: moment().format("YYYYMMDD"),
+          modifyDate: null,
+          password: undefined,
+          families: undefined
         }
       ]
     });
   });
 });
 
-/************************************** GET /users/:username */
+/************************************** GET /users/:id */
 
-describe("GET /users/:username", function () {
+describe("GET /users/:id", function () {
   test("works", async function () {
-    const resp = await request(app).get(`/users/u1`);
+    const resp = await request(app).get(`/users/${testUserIds[0]}`);
     expect(resp.body).toEqual({
       user: {
-        username: "u1",
+        id: testUserIds[0],
         email: "u1@mail.com",
         firstName: "First1",
         lastName: "Last1",
         imageUrl: null,
         bio: null,
-        joinDate: moment().format("YYYYMMDD"),
+        createDate: moment().format("YYYYMMDD"),
+        modifyDate: null,
+        password: undefined,
         families: [
           { 
             familyId: testFamilyIds[0], 
-            familyname: "fam1", 
+            familyName: "fam1", 
             status: "active",
             isAdmin: false,
             primaryFamily: false,
-            joinDate: moment().format("YYYYMMDD")   
+            createDate: moment().format("YYYYMMDD"),
+            modifyDate: null      
           }
         ]
       }
@@ -176,36 +187,39 @@ describe("GET /users/:username", function () {
   });
 
   test("not found if user not found", async function () {
-    const resp = await request(app).get(`/users/fake`)
+    const resp = await request(app).get(`/users/0`)
     expect(resp.statusCode).toEqual(404);
   });
 });
 
-/************************************** PATCH /users/:username */
+/************************************** PATCH /users/:id */
 
-describe("PATCH /users/:username", () => {
+describe("PATCH /users/:id", () => {
   test("works", async function () {
     const resp = await request(app)
-        .patch(`/users/u1`)
+        .patch(`/users/${testUserIds[0]}`)
         .send({
           firstName: "New",
         });
     expect(resp.body).toEqual({
       user: {
-        username: "u1",
+        id: testUserIds[0],
         email: "u1@mail.com",
         firstName: "New",
         lastName: "Last1",
         imageUrl: null,
         bio: null,
-        joinDate: moment().format("YYYYMMDD")
+        createDate: moment().format("YYYYMMDD"),
+        modifyDate: moment().format("YYYYMMDD"),
+        password: undefined,
+        families: undefined
       }
     });
   });
 
   test("not found if no such user", async function () {
     const resp = await request(app)
-        .patch(`/users/fake`)
+        .patch(`/users/0`)
         .send({
           firstName: "New",
         });
@@ -214,7 +228,7 @@ describe("PATCH /users/:username", () => {
 
   test("bad request if extra data", async function () {
     const resp = await request(app)
-        .post("/users")
+        .patch(`/users/${testUserIds[0]}`)
         .send({
           email: "new@mail.com",
           extra: "extra-info"
@@ -224,7 +238,7 @@ describe("PATCH /users/:username", () => {
 
   test("bad request if invalid data - email format", async function () {
     const resp = await request(app)
-        .post("/users")
+        .patch(`/users/${testUserIds[0]}`)
         .send({
           email: "not-an-email"
         });
@@ -232,26 +246,26 @@ describe("PATCH /users/:username", () => {
   });
 });
 
-/************************************** DELETE /users/:username */
+/************************************** DELETE /users/:id */
 
 describe("DELETE /users/:username", function () {
   test("works", async function () {
-    const resp = await request(app).delete(`/users/u1`);
-    expect(resp.body).toEqual({ deleted: "u1" });
+    const resp = await request(app).delete(`/users/${testUserIds[0]}`);
+    expect(resp.body).toEqual({ deleted: testUserIds[0].toString() });
   });
 
   test("not found if user missing", async function () {
-    const resp = await request(app).delete(`/users/nope`);
+    const resp = await request(app).delete(`/users/0`);
     expect(resp.statusCode).toEqual(404);
   });
 });
 
-/************************************** POST /users/:username/families/:familyId */
+/************************************** POST /users/:id/families/:familyId */
 
-describe("POST /users/:username/families/:familyId", function () {
+describe("POST /users/:id/families/:familyId", function () {
   test("works", async function () {
     const resp = await request(app)
-        .post(`/users/u2/families/${testFamilyIds[0]}`);
+        .post(`/users/${testUserIds[1]}/families/${testFamilyIds[0]}`);
     expect(resp.body).toEqual({
       familyStatus: 
         { 
@@ -259,93 +273,81 @@ describe("POST /users/:username/families/:familyId", function () {
           status: "active",
           isAdmin: false,
           primaryFamily: false,
-          joinDate: moment().format("YYYYMMDD")
+          createDate: moment().format("YYYYMMDD")
         }
     });
   });
 
   test("not found for no such familyId", async function () {
     const resp = await request(app)
-        .post(`/users/u1/families/0`)
-        .send({
-          username: "u1",
-          email: "u1@mail.com",
-          password: "password1",
-          firstName: "First1",
-          lastName: "Last1",
-        });;
+        .post(`/users/${testUserIds[1]}/families/0`);
     expect(resp.statusCode).toEqual(404);
   });
 
   test("bad request if already a member of family", async function () {
     const resp = await request(app)
-        .post(`/users/u1/families/${testFamilyIds[0]}`)
-        .send({
-          username: "u1",
-          email: "u1@mail.com",
-          password: "password1",
-          firstName: "First1",
-          lastName: "Last1",
-        });
+        .post(`/users/${testUserIds[0]}/families/${testFamilyIds[0]}`);
     expect(resp.statusCode).toEqual(400);
   });
 });
 
-/************************************** Get /users/:username/families */
+// /************************************** Get /users/:id/families */
 
-describe("GET /users/:username/families", function () {
+describe("GET /users/:id/families", function () {
   test("works", async function () {
-    const resp = await request(app).get(`/users/u1/families`);
+    const resp = await request(app).get(`/users/${testUserIds[0]}/families`);
     expect(resp.body).toEqual({
       families: [
        { 
          familyId: testFamilyIds[0], 
-         familyname: "fam1",
+         familyName: "fam1",
          status: "active",
          isAdmin: false,
          primaryFamily: false,
-         joinDate: moment().format("YYYYMMDD") 
+         createDate: moment().format("YYYYMMDD"),
+         modifyDate: null
         }
       ]
     });
   });
 });
 
-/************************************** Get /users/:username/families/:familyId */
+// /************************************** Get /users/:id/families/:familyId */
 
-describe("GET /users/:username/families/:familyId", function () {
+describe("GET /users/:id/families/:familyId", function () {
   test("works", async function () {
-    const resp = await request(app).get(`/users/u1/families/${testFamilyIds[0]}`);
+    const resp = await request(app).get(`/users/${testUserIds[0]}/families/${testFamilyIds[0]}`);
     expect(resp.body).toEqual({
       familyStatus: { 
         familyId: testFamilyIds[0], 
         status: "active",
         isAdmin: false,
         primaryFamily: false,
-        joinDate: moment().format("YYYYMMDD") 
+        createDate: moment().format("YYYYMMDD"), 
+        modifyDate: null
       }
     });
   });
 
   test("not found for no such familyId", async function () {
     const resp = await request(app)
-        .get(`/users/u1/families/0`);
+        .get(`/users/${testUserIds[0]}/families/0`);
     expect(resp.statusCode).toEqual(404);
   });
 
   test("bad request if not a member of family", async function () {
     const resp = await request(app)
-        .get(`/users/u1/families/${testFamilyIds[1]}`);
+        .get(`/users/${testUserIds[0]}/families/${testFamilyIds[1]}`);
     expect(resp.statusCode).toEqual(400);
   });
 });
 
-/************************************** PATCH /users/:username/families/:familyId */
+// /************************************** PATCH /users/:id/families/:familyId */
 
-describe("PATCH /users/:username/families/:familyId", function () {
+describe("PATCH /users/:id/families/:familyId", function () {
   test("works for change in status", async function () {
     const resp = await request(app)
-        .patch(`/users/u1/families/${testFamilyIds[0]}`)
+        .patch(`/users/${testUserIds[0]}/families/${testFamilyIds[0]}`)
         .send({
           "status":"inactive"
         });
@@ -356,14 +358,15 @@ describe("PATCH /users/:username/families/:familyId", function () {
           status: "inactive",
           isAdmin: false,
           primaryFamily: false,
-          joinDate: moment().format("YYYYMMDD")
+          createDate: moment().format("YYYYMMDD"),
+          modifyDate: moment().format("YYYYMMDD")
         }
     });
   });
 
   test("works for change in isAdmin", async function () {
     const resp = await request(app)
-        .patch(`/users/u1/families/${testFamilyIds[0]}`)
+        .patch(`/users/${testUserIds[0]}/families/${testFamilyIds[0]}`)
         .send({
           "isAdmin":true
         });
@@ -374,14 +377,15 @@ describe("PATCH /users/:username/families/:familyId", function () {
           status: "active",
           isAdmin: true,
           primaryFamily: false,
-          joinDate: moment().format("YYYYMMDD")
+          createDate: moment().format("YYYYMMDD"),
+          modifyDate: moment().format("YYYYMMDD")
         }
     });
   });
 
   test("works for change in primaryFamily", async function () {
     const resp = await request(app)
-        .patch(`/users/u1/families/${testFamilyIds[0]}`)
+        .patch(`/users/${testUserIds[0]}/families/${testFamilyIds[0]}`)
         .send({
           "primaryFamily":true
         });
@@ -392,14 +396,15 @@ describe("PATCH /users/:username/families/:familyId", function () {
           status: "active",
           isAdmin: false,
           primaryFamily: true,
-          joinDate: moment().format("YYYYMMDD")
+          createDate: moment().format("YYYYMMDD"),
+          modifyDate: moment().format("YYYYMMDD")
         }
     });
   });
 
   test("not found for no such familyId", async function () {
     const resp = await request(app)
-        .patch(`/users/u1/families/0`)
+        .patch(`/users/${testUserIds[0]}/families/0`)
         .send({
           "status":"inactive"
         });
@@ -408,7 +413,7 @@ describe("PATCH /users/:username/families/:familyId", function () {
 
   test("bad request if not a member of family", async function () {
     const resp = await request(app)
-        .patch(`/users/u1/families/${testFamilyIds[1]}`)        
+        .patch(`/users/${testUserIds[0]}/families/${testFamilyIds[1]}`)        
         .send({
           "status":"inactive"
         });

@@ -10,7 +10,6 @@ const router = express.Router();
 const { BadRequestError } = require("../expressError");
 
 const User = require("../models/user");
-const Result = require("../models/result");
 const userNewSchema = require("../schemas/userNew.json");
 const userUpdateSchema = require("../schemas/userUpdate.json");
 const usersFamiliesUpdateSchema = require("../schemas/usersFamiliesUpdate.json");
@@ -18,10 +17,10 @@ const usersFamiliesUpdateSchema = require("../schemas/usersFamiliesUpdate.json")
 
 /** POST / { data }  => { user }
  *
- * data must include { username, password, email, firstName, lastName }
+ * data must include { email, password, firstName, lastName }
  * data may include { imageUrl, bio }
  * 
- * user is { username, email, firstName, lastName, imageUrl, bio, joinDate }
+ * user is { id, email, firstName, lastName, imageUrl, bio, createDate }
  **/
 
  router.post("/", async function (req, res, next) {
@@ -33,6 +32,7 @@ const usersFamiliesUpdateSchema = require("../schemas/usersFamiliesUpdate.json")
     }
 
     const user = await User.create(req.body);
+
     return res.status(201).json({ user });
   } catch (err) {
     return next(err);
@@ -43,7 +43,7 @@ const usersFamiliesUpdateSchema = require("../schemas/usersFamiliesUpdate.json")
 /** GET / => { users: [ { user1, user2, ... } ] }
  * Returns a list of users
  * 
- * user is { username, email, firstName, lastName, imageUrl, bio, joinDate }
+ * user is { id, email, firstName, lastName, imageUrl, bio, createDate, modifyDate }
  **/
 
  router.get("/", async function (req, res, next) {
@@ -57,18 +57,19 @@ const usersFamiliesUpdateSchema = require("../schemas/usersFamiliesUpdate.json")
 });
 
 
-/** GET /[username] => { user }
- * Returns user data given username
+/** GET /[id] => { user }
+ * Returns user data given user id
  * 
- * user is { username, email, firstName, lastName, imageUrl, bio, joinDate, families }
+ * user is { id, email, firstName, lastName, imageUrl, bio, createDate, modifyDate, families }
  * 
- * families is [ {id1, familyname1}, {id2, familyname2}, ... } ]
+ * families is [ family1, family2, ... ]
+ *    where family is { familyId, familyname, status, isAdmin, primaryFamily, createDate, modifyDate }
  **/
- router.get("/:username", async function (req, res, next) {
+ router.get("/:id", async function (req, res, next) {
   try {  
-    const {username} = req.params;
+    const {id} = req.params;
 
-    const user = await User.find(username);
+    const user = await User.find(id);
 
     return res.json({ user });
   } catch (err) {
@@ -77,16 +78,16 @@ const usersFamiliesUpdateSchema = require("../schemas/usersFamiliesUpdate.json")
 });
 
 
-/** PATCH /[username] { data } => { user }
+/** PATCH /[id] { data } => { user }
  *
  * Data can include:
- *   { email, password, firstName, lastName, imageUrl, bio }
+ *   { password, firstName, lastName, imageUrl, bio }
  * Must include at least one property
  *
- * Returns { username, email, firstName, lastName, imageUrl, bio, joinDate }
+ * Returns { id, email, firstName, lastName, imageUrl, bio, createDate, modifyDate }
  **/
 
- router.patch("/:username", async function (req, res, next) {
+ router.patch("/:id", async function (req, res, next) {
   try {
     const validator = jsonschema.validate(req.body, userUpdateSchema);
     if (!validator.valid) {
@@ -94,8 +95,8 @@ const usersFamiliesUpdateSchema = require("../schemas/usersFamiliesUpdate.json")
       throw new BadRequestError(errs);
     }
 
-    const {username} = req.params;
-    let user = await User.find(username);
+    const {id} = req.params;
+    let user = await User.find(id);
 
     user = await user.update(req.body);
 
@@ -106,30 +107,30 @@ const usersFamiliesUpdateSchema = require("../schemas/usersFamiliesUpdate.json")
 });
 
 
-/** DELETE /[username]  =>  { deleted: username }
+/** DELETE /[id]  =>  { deleted: id }
  **/
- router.delete("/:username", async function (req, res, next) {
+ router.delete("/:id", async function (req, res, next) {
   try {
-    const {username} = req.params;
-    const user = await User.find(username);
+    const {id} = req.params;
+    const user = await User.find(id);
 
     await user.remove();
-    return res.json({ deleted: username });
+    return res.json({ deleted: id });
   } catch (err) {
     return next(err);
   }
 });
 
 
-/** POST /[username]/families/[familyId] => { familyStatus }
+/** POST /[id]/families/[familyId] => { familyStatus }
  * 
- * familyStatus is {familyId, status, isAdmin, primaryFamily, joinDate} 
+ * familyStatus is {familyId, status, isAdmin, primaryFamily, createDate} 
  **/
- router.post("/:username/families/:familyId", async function (req, res, next) {
+ router.post("/:id/families/:familyId", async function (req, res, next) {
   try {  
-    let {username, familyId} = req.params;
+    let {id, familyId} = req.params;
     familyId = +familyId;
-    const user = await User.find(username);
+    const user = await User.find(id);
 
     const familyStatus = await user.joinFamily(familyId);
 
@@ -140,15 +141,15 @@ const usersFamiliesUpdateSchema = require("../schemas/usersFamiliesUpdate.json")
 });
 
 
-/** GET /[username]/families => { families: [ family1, family2, ... ] }
+/** GET /[id]/families => { families: [ family1, family2, ... ] }
  * Returns list of families given username
  * 
- * family is {familyId, familyname, status, isAdmin, primaryFamily, joinDate}
+ * family is { familyId, familyname, status, isAdmin, primaryFamily, createDate, modifyDate }
  **/
- router.get("/:username/families", async function (req, res, next) {
+ router.get("/:id/families", async function (req, res, next) {
   try {  
-    const {username} = req.params;
-    const user = await User.find(username);
+    const {id} = req.params;
+    const user = await User.find(id);
 
     const families = await user.findFamilies();
 
@@ -159,14 +160,14 @@ const usersFamiliesUpdateSchema = require("../schemas/usersFamiliesUpdate.json")
 });
 
 
-/** GET /[username]/families/[familyId] => { familyStatus }
+/** GET /[id]/families/[familyId] => { familyStatus }
  * 
- * familyStatus is {familyId, status, isAdmin, primaryFamily, joinDate} 
+ * familyStatus is {familyId, status, isAdmin, primaryFamily, createDate} 
  **/
- router.get("/:username/families/:familyId", async function (req, res, next) {
+ router.get("/:id/families/:familyId", async function (req, res, next) {
   try {  
-    const {username, familyId} = req.params;
-    const user = await User.find(username);
+    const {id, familyId} = req.params;
+    const user = await User.find(id);
 
     const familyStatus = await user.findFamilyStatus(familyId);
 
@@ -177,12 +178,12 @@ const usersFamiliesUpdateSchema = require("../schemas/usersFamiliesUpdate.json")
 });
 
 
-/** PATCH /[username]/families/[familyId] {data} => { updatedStatus }
+/** PATCH /[id]/families/[familyId] {data} => { updatedStatus }
  *  data may include { status, isAdmin, primaryFamily }
  * 
- * updatedStatus is {familyId, status, isAdmin, primaryFamily, joinDate} 
+ * updatedStatus is { familyId, status, isAdmin, primaryFamily, createDate, modifyDate } 
  **/
- router.patch("/:username/families/:familyId", async function (req, res, next) {
+ router.patch("/:id/families/:familyId", async function (req, res, next) {
   try {  
     const validator = jsonschema.validate(req.body, usersFamiliesUpdateSchema);
     if (!validator.valid) {
@@ -190,9 +191,9 @@ const usersFamiliesUpdateSchema = require("../schemas/usersFamiliesUpdate.json")
       throw new BadRequestError(errs);
     }
 
-    let {username, familyId} = req.params;
+    let {id, familyId} = req.params;
     familyId = +familyId;
-    const user = await User.find(username);
+    const user = await User.find(id);
 
     const updatedStatus = await user.updateFamilyStatus(familyId, req.body);
 
@@ -201,42 +202,6 @@ const usersFamiliesUpdateSchema = require("../schemas/usersFamiliesUpdate.json")
     return next(err);
   }
 });
-
-
-/** GET /[username]/results => { results: [ { result1, result2, ... } ] }
- * Returns list of results given username
- * 
- * result is { id, username, familyId, workoutId, score, notes, dateCompleted }
- **/
-//  router.get("/:username/results", async function (req, res, next) {
-//   try {  
-//     const {username} = req.params;
-
-//     const results = await Result.findAll(null, username, null);
-
-//     return res.json({ results });
-//   } catch (err) {
-//     return next(err);
-//   }
-// });
-
-
-/** GET /[username]/workouts/[workoutId]/results => { results: [ { result1, result2, ... } ] }
- * Returns list of results given username and workout id
- * 
- * result is { id, username, familyId, workoutId, score, notes, dateCompleted }
- **/
-//  router.get("/:username/workouts/:workoutId/results", async function (req, res, next) {
-//   try {  
-//     const {username, workoutId} = req.params;
-
-//     const results = await Result.findAll(workoutId, username, null);
-
-//     return res.json({ results });
-//   } catch (err) {
-//     return next(err);
-//   }
-// });
 
 
 module.exports = router;

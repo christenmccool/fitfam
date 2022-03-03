@@ -5,32 +5,35 @@ CREATE TYPE curr_status AS ENUM (
 );
 
 CREATE TABLE users (
-  username text PRIMARY KEY,
-  email text NOT NULL,
+  id serial PRIMARY KEY,
+  email text NOT NULL UNIQUE,
   user_password text, 
   first_name text NOT NULL,
   last_name text NOT NULL,
   image_url text,
   bio text,
-  join_date date DEFAULT CURRENT_DATE NOT NULL
+  create_date timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  modify_date timestamptz
 );
 
 CREATE TABLE families (
   id serial PRIMARY KEY,
-  familyname text NOT NULL,
+  family_name text NOT NULL,
   image_url text,
   bio text,
-  creation_date date DEFAULT CURRENT_DATE NOT NULL
+  create_date timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  modify_date timestamptz
 );
 
 CREATE TABLE users_families (
-  username text REFERENCES users ON DELETE CASCADE,
+  user_id integer REFERENCES users ON DELETE CASCADE,
   family_id integer REFERENCES families ON DELETE CASCADE,
   family_status curr_status NOT NULL DEFAULT 'active',
   is_admin boolean DEFAULT false,
   primary_family boolean DEFAULT false,
-  join_date date DEFAULT CURRENT_DATE NOT NULL,
-  PRIMARY KEY (username, family_id)
+  create_date timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  modify_date timestamptz,
+  PRIMARY KEY (user_id, family_id)
 );
 
 CREATE TABLE workouts (
@@ -40,27 +43,32 @@ CREATE TABLE workouts (
   wo_description text,
   category text,
   score_type text,
-  wo_date date
+  create_date timestamptz DEFAULT CURRENT_TIMESTAMP,
+  modify_date timestamptz, 
+  publish_date timestamptz
 );   
 
 ALTER SEQUENCE workouts_id_seq RESTART WITH 450;
 
 CREATE TABLE results (
   id serial PRIMARY KEY,
-  username text NOT NULL REFERENCES users ON DELETE CASCADE,
+  user_id integer NOT NULL REFERENCES users ON DELETE CASCADE,
   family_id integer NOT NULL REFERENCES families ON DELETE CASCADE, 
   workout_id integer NOT NULL REFERENCES workouts ON DELETE CASCADE,
   score integer,
   notes text,
-  date_completed date DEFAULT CURRENT_DATE NOT NULL
+  create_date timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  modify_date timestamptz,
+  complete_date timestamptz
 );
 
 CREATE TABLE comments (
   id serial PRIMARY KEY,
   result_id integer NOT NULL REFERENCES results ON DELETE CASCADE,
-  username text NOT NULL REFERENCES users ON DELETE CASCADE,
+  user_id integer NOT NULL REFERENCES users ON DELETE CASCADE,
   content text NOT NULL,
-  comment_date date DEFAULT CURRENT_DATE NOT NULL
+  create_date timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  modify_date timestamptz
 );
 
 CREATE TABLE movements (

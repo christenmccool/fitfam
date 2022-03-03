@@ -27,27 +27,19 @@ COPY workout_movement_import FROM '/Users/christenmccool/Documents/fitfam/sql/wo
 INSERT INTO workouts_movements 
   SELECT q.* FROM workout_movement_import, json_populate_record(null::workouts_movements, info::json) AS q;
 
-INSERT INTO users (username, email, first_name, last_name)
-  VALUES ('christen', 'christen@mail.com', 'Christen', 'McCool'),
-         ('clay', 'clay@mail.com', 'Clay', 'Braden'),
-         ('cami', 'cami@mail.com', 'Cami', 'Cortney');
+INSERT INTO users (email, user_password, first_name, last_name)
+  VALUES ('christen@mail.com', 'password', 'Christen', 'McCool'),
+         ('clay@mail.com', 'password', 'Clay', 'Braden'),
+         ('cami@mail.com', 'password', 'Cami', 'Cortney');
 
-INSERT INTO families (familyname)
+INSERT INTO families (family_name)
   VALUES ('mcbragren'),
          ('workteam');
 
-INSERT INTO users_families (username, family_id)
-  VALUES ('christen',1),
-         ('clay',1),
-         ('christen',2),
-         ('cami',2);
-
--- INSERT INTO results (username, family_id, workout_id, score, notes)
---   VALUES ('christen', 1, 'CsUbCjnosY', 600, 'Tough one'),
---          ('christen', 1, 'xblsnf7IXw', 400, 'Loved'),
---          ('christen', 2, 'xblsnf7IXw', 400, 'Loved'),
---          ('cami', 2, 'xblsnf7IXw', 400, 'Its a tie!'),
---          ('clay', 1, 'CsUbCjnosY', 401, 'I win'),
---          ('clay', 1, 'xblsnf7IXw', 399, 'Ugh');
+INSERT INTO users_families (user_id, family_id)
+  VALUES (1,1),
+         (2,1),
+         (1,2),
+         (3,2);
 
 

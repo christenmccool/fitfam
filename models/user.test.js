@@ -14,6 +14,7 @@ const {
   commonBeforeEach,
   commonAfterEach,
   commonAfterAll,
+  testUserIds,
   testFamilyIds
 } = require("./_testCommon");
 
@@ -26,7 +27,6 @@ afterAll(commonAfterAll);
 
 describe("create", function () {
   const newUser = {
-    username: "u-new",
     email: "new@mail.com",
     firstName: "First-new",
     lastName: "Last-new"
@@ -40,14 +40,16 @@ describe("create", function () {
 
     expect(user).toEqual({
       ...newUser,
+      id: expect.any(Number),
       imageUrl: null,
       bio: null,
-      joinDate: moment().format("YYYYMMDD"),
+      createDate: moment().format("YYYYMMDD"),
       password: undefined,
+      modifyDate: undefined,
       families: undefined
     });
 
-    const found = await db.query("SELECT * FROM users WHERE username = 'u-new'");
+    const found = await db.query("SELECT * FROM users WHERE email = 'new@mail.com'");
     expect(found.rows.length).toEqual(1);
     expect(found.rows[0].first_name).toEqual('First-new');
   });
@@ -74,37 +76,41 @@ describe("create", function () {
 describe("findAll", function () {
   test("works", async function () {
     const users = await User.findAll();
+
     expect(users).toEqual([
       {
-        username: "u1",
+        id: testUserIds[0],
+        email: "u1@mail.com",
         firstName: "First1",
         lastName: "Last1",
-        email: "u1@mail.com",
         imageUrl: null,
         bio: null,
-        joinDate: moment().format("YYYYMMDD"),
+        createDate: moment().format("YYYYMMDD"),
+        modifyDate: null,
         password: undefined,
         families: undefined
       },
       {
-        username: "u2",
+        id: testUserIds[1],
+        email: "u2@mail.com",
         firstName: "First2",
         lastName: "Last2",
-        email: "u2@mail.com",
         imageUrl: "user2image.com",
         bio: null,
-        joinDate: moment().format("YYYYMMDD"),
+        createDate: moment().format("YYYYMMDD"),
+        modifyDate: null,
         password: undefined,
         families: undefined
       },
       {
-        username: "u3",
+        id: testUserIds[2],
+        email: "u3@mail.com",
         firstName: "First3",
         lastName: "Last3",
-        email: "u3@mail.com",
         imageUrl: "user3image.com",
         bio: "Bio of u3",
-        joinDate: moment().format("YYYYMMDD"),
+        createDate: moment().format("YYYYMMDD"),
+        modifyDate: null,
         password: undefined,
         families: undefined
       }
@@ -112,8 +118,7 @@ describe("findAll", function () {
   });
 
   test("works after adding new user", async function () {
-    await User.create({
-      username: "u-new",
+    const user = await User.create({
       email: "new@mail.com",
       firstName: "First-new",
       lastName: "Last-new",      
@@ -123,46 +128,50 @@ describe("findAll", function () {
     const users = await User.findAll();
     expect(users).toEqual([
       {
-        username: "u1",
+        id: testUserIds[0],
+        email: "u1@mail.com",
         firstName: "First1",
         lastName: "Last1",
-        email: "u1@mail.com",
         imageUrl: null,
         bio: null,
-        joinDate: moment().format("YYYYMMDD"),
+        createDate: moment().format("YYYYMMDD"),
+        modifyDate: null,
         password: undefined,
         families: undefined
       },
       {
-        username: "u2",
+        id: testUserIds[1],
+        email: "u2@mail.com",
         firstName: "First2",
         lastName: "Last2",
-        email: "u2@mail.com",
         imageUrl: "user2image.com",
         bio: null,
-        joinDate: moment().format("YYYYMMDD"),
+        createDate: moment().format("YYYYMMDD"),
+        modifyDate: null,
         password: undefined,
         families: undefined
       },
       {
-        username: "u3",
+        id: testUserIds[2],
+        email: "u3@mail.com",
         firstName: "First3",
         lastName: "Last3",
-        email: "u3@mail.com",
         imageUrl: "user3image.com",
         bio: "Bio of u3",
-        joinDate: moment().format("YYYYMMDD"),
+        createDate: moment().format("YYYYMMDD"),
+        modifyDate: null,
         password: undefined,
         families: undefined
       },
       {
-        username: "u-new",
+        id: expect.any(Number),
         email: "new@mail.com",
         firstName: "First-new",
         lastName: "Last-new",     
         imageUrl: null,
         bio: null,
-        joinDate: moment().format("YYYYMMDD"),
+        createDate: moment().format("YYYYMMDD"),
+        modifyDate: null,
         password: undefined,
         families: undefined
       }
@@ -174,22 +183,25 @@ describe("findAll", function () {
 
 describe("find", function () {
   test("works", async function () {
-    let user = await User.find("u1");
+    let user = await User.find(testUserIds[0]);
+
     expect(user).toEqual({
-      username: "u1",
+      id: testUserIds[0],
       firstName: "First1",
       lastName: "Last1",
       email: "u1@mail.com",
       imageUrl: null,
       bio: null,
-      joinDate: moment().format("YYYYMMDD"),
+      createDate: moment().format("YYYYMMDD"),
+      modifyDate: null,
       password: undefined,
       families: [
         {
           familyId: testFamilyIds[0],
-          familyname: "fam1",
+          familyName: "fam1",
           isAdmin: false,
-          joinDate: moment().format("YYYYMMDD"),
+          createDate: moment().format("YYYYMMDD"),
+          modifyDate: null,
           primaryFamily: false,
           status: "active",
         },
@@ -199,7 +211,7 @@ describe("find", function () {
 
   test("not found if no such user", async function () {
     try {
-      await User.find("fake");
+      await User.find(0);
     } catch (err) {
       expect(err instanceof NotFoundError).toBeTruthy();
     }
@@ -212,18 +224,20 @@ describe("update", function () {
   const updateData = {
     firstName: "NewF",
     lastName: "NewL",
-    email: "new@mail.com",
     imageUrl: "newimage.com",
     bio: "Bio of new user"
   };
 
   test("works", async function () {
-    let user = await User.find("u1");
+    let user = await User.find(testUserIds[0]);
     let updatedUser = await user.update(updateData);
 
     expect(updatedUser).toEqual({
-      username: "u1",
-      joinDate: moment().format("YYYYMMDD"),
+      id: testUserIds[0],
+      email: "u1@mail.com",
+      createDate: moment().format("YYYYMMDD"),
+      modifyDate: moment().format("YYYYMMDD"),
+      password: undefined,
       families: undefined,
       ...updateData
     });
@@ -231,7 +245,7 @@ describe("update", function () {
 
   test("not found if no such user", async function () {
     try {
-      let user = await User.find("u1");
+      let user = await User.find(0);
       await user.update(updateData);
     } catch (err) {
       expect(err instanceof NotFoundError).toBeTruthy();
@@ -243,18 +257,18 @@ describe("update", function () {
 
 describe("remove", function () {
   test("works", async function () {
-    let user = await User.find("u1");
+    let user = await User.find(testUserIds[0]);
     await user.remove();
 
     const res = await db.query(
-        "SELECT * FROM users WHERE username='u1'"
+        `SELECT * FROM users WHERE id=${testUserIds[0]}`
     );
     expect(res.rows.length).toEqual(0);
   });
 
   test("not found if no such user", async function () {
     try {
-      let user = await User.find("u1");
+      let user = await User.find(0);
       await user.remove();
     } catch (err) {
       expect(err instanceof NotFoundError).toBeTruthy();
@@ -266,7 +280,7 @@ describe("remove", function () {
 
 describe("joinFamily", function () {
   test("works", async function () {
-    let user = await User.find("u1");
+    let user = await User.find(testUserIds[0]);
     let familyStatus = await user.joinFamily(testFamilyIds[1]);
 
     expect(familyStatus).toEqual({
@@ -274,7 +288,7 @@ describe("joinFamily", function () {
       status: "active",
       isAdmin: false,
       primaryFamily: false,
-      joinDate: moment().format("YYYYMMDD")
+      createDate: moment().format("YYYYMMDD")
     });
 
     const res = await db.query(
@@ -282,19 +296,20 @@ describe("joinFamily", function () {
 
     expect(res.rows).toEqual([
       {
-        username: 'u1',
+        user_id: testUserIds[0],
         family_id: testFamilyIds[1],
         family_status: "active",
         is_admin: false,
         primary_family: false,
-        join_date: expect.any(Date)
+        create_date: expect.any(Date),
+        modify_date: null
       }
     ]);
   });
 
   test("not found if no such family", async function () {
     try {
-      let user = await User.find("u1");
+      let user = await User.find(testUserIds[0]);
       await user.joinFamily(0);
     } catch (err) {
       expect(err instanceof NotFoundError).toBeTruthy();
@@ -303,134 +318,131 @@ describe("joinFamily", function () {
 
   test("bad request if user already in family", async function () {
     try {
-      let user = await User.find("u1");
+      let user = await User.find(testUserIds[0]);
       await user.joinFamily(testFamilyIds[0]);
     } catch (err) {
       expect(err instanceof BadRequestError).toBeTruthy();
     }
   });
+});
 
-  /************************************** findFamilies */
-  describe("findFamilies", function () {
-    test("works", async function () {
-      let user = await User.find("u1");
-      let families = await user.findFamilies();
-  
-      expect(families).toEqual([
-        {
-          familyId: testFamilyIds[0],
-          familyname: "fam1",
-          status: "active",
-          isAdmin: false,
-          primaryFamily: false,
-          joinDate: moment().format("YYYYMMDD")
-        }
-      ]);
-    });
+/************************************** findFamilies */
+describe("findFamilies", function () {
+  test("works", async function () {
+    let user = await User.find(testUserIds[0]);
+    let families = await user.findFamilies();
 
-    test("works after adding family", async function () {
-      let user = await User.find("u1");
-      await user.joinFamily(testFamilyIds[1]);
-      let families = await user.findFamilies();
-  
-      expect(families).toEqual([
-        {
-          familyId: testFamilyIds[0],
-          familyname: "fam1",
-          status: "active",
-          isAdmin: false,
-          primaryFamily: false,
-          joinDate: moment().format("YYYYMMDD")
-        },
-        {
-          familyId: testFamilyIds[1],
-          familyname: "fam2",
-          status: "active",
-          isAdmin: false,
-          primaryFamily: false,
-          joinDate: moment().format("YYYYMMDD")
-        }
-      ]);
-    });
-  });
-
-  /************************************** findFamilyStatus */
-  describe("findFamily", function () {
-    test("works", async function () {
-      let user = await User.find("u1");
-      let familyStatus = await user.findFamilyStatus(testFamilyIds[0]);
-
-      expect(familyStatus).toEqual({
+    expect(families).toEqual([
+      {
         familyId: testFamilyIds[0],
+        familyName: "fam1",
         status: "active",
         isAdmin: false,
         primaryFamily: false,
-        joinDate: moment().format("YYYYMMDD")
-      })
-    });
-
-    test("not found if no such family", async function () {
-      try {
-        let user = await User.find("u1");
-        await user.findFamilyStatus(0);
-      } catch(err) {
-        expect(err instanceof NotFoundError).toBeTruthy();
+        createDate: moment().format("YYYYMMDD"),
+        modifyDate: null
       }
-    })
+    ]);
+  });
 
-    test("bad request if not a member of family", async function () {
-      try {
-        let user = await User.find("u1");
-        await user.findFamilyStatus(testFamilyIds[1]);
-      } catch(err) {
-        expect(err instanceof BadRequestError).toBeTruthy();
+  test("works after adding family", async function () {
+    let user = await User.find(testUserIds[0]);
+    await user.joinFamily(testFamilyIds[1]);
+    let families = await user.findFamilies();
+
+    expect(families).toEqual([
+      {
+        familyId: testFamilyIds[0],
+        familyName: "fam1",
+        status: "active",
+        isAdmin: false,
+        primaryFamily: false,
+        createDate: moment().format("YYYYMMDD"),
+        modifyDate: null
+      },
+      {
+        familyId: testFamilyIds[1],
+        familyName: "fam2",
+        status: "active",
+        isAdmin: false,
+        primaryFamily: false,
+        createDate: moment().format("YYYYMMDD"),
+        modifyDate: null
       }
+    ]);
+  });
+});
+
+/************************************** findFamilyStatus */
+describe("findFamily", function () {
+  test("works", async function () {
+    let user = await User.find(testUserIds[0]);
+    let familyStatus = await user.findFamilyStatus(testFamilyIds[0]);
+
+    expect(familyStatus).toEqual({
+      familyId: testFamilyIds[0],
+      status: "active",
+      isAdmin: false,
+      primaryFamily: false,
+      createDate: moment().format("YYYYMMDD"),
+      modifyDate: null
     })
   });
 
-  /************************************** updateFamilyStatus */
-  describe("updateFamilyStatus", function () {
-    const updateData = {
-      status: "pending",
-      isAdmin: true,
-      primaryFamily: true
-    };
+  test("not found if no such family", async function () {
+    try {
+      let user = await User.find(testUserIds[0]);
+      await user.findFamilyStatus(0);
+    } catch(err) {
+      expect(err instanceof NotFoundError).toBeTruthy();
+    }
+  })
 
-    test("works", async function () {
-      let user = await User.find("u1");
-      let updatedStatus = await user.updateFamilyStatus(testFamilyIds[0], updateData);
+  test("bad request if not a member of family", async function () {
+    try {
+      let user = await User.find(testUserIds[0]);
+      await user.findFamilyStatus(testFamilyIds[1]);
+    } catch(err) {
+      expect(err instanceof BadRequestError).toBeTruthy();
+    }
+  })
+});
 
-      expect(updatedStatus).toEqual({
-        ...updateData,
-        familyId: testFamilyIds[0],
-        joinDate: moment().format("YYYYMMDD")
-      })
+/************************************** updateFamilyStatus */
+describe("updateFamilyStatus", function () {
+  const updateData = {
+    status: "pending",
+    isAdmin: true,
+    primaryFamily: true
+  };
+
+  test("works", async function () {
+    let user = await User.find(testUserIds[0]);
+    let updatedStatus = await user.updateFamilyStatus(testFamilyIds[0], updateData);
+
+    expect(updatedStatus).toEqual({
+      ...updateData,
+      familyId: testFamilyIds[0],
+      createDate: moment().format("YYYYMMDD"),
+      modifyDate: moment().format("YYYYMMDD")
     })
+  })
 
-    test("not found if no such family", async function () {
-      try {
-        let user = await User.find("u1");
-        await user.updateFamilyStatus(0, 
-          updateData.status, 
-          updateData.isAdmin, 
-          updateData.primaryFamily
-        );
-      } catch(err) {
-        expect(err instanceof NotFoundError).toBeTruthy();
-      }
-    })
+  test("not found if no such family", async function () {
+    try {
+      let user = await User.find(testUserIds[0]);
+      await user.updateFamilyStatus(0, updateData);
+    } catch(err) {
+      expect(err instanceof NotFoundError).toBeTruthy();
+    }
+  })
 
-    test("bad request if not a member of family", async function () {
-      try {
-        let user = await User.find("u1");
-        await user.updateFamilyStatus(testFamilyIds[1], 
-          updateData.status, 
-          updateData.isAdmin, 
-          updateData.primaryFamily
-        );
-      } catch(err) {
-        expect(err instanceof BadRequestError).toBeTruthy();
-      }
-    })
+  test("bad request if not a member of family", async function () {
+    try {
+      let user = await User.find(testUserIds[0]);
+      await user.updateFamilyStatus(testFamilyIds[1], updateData);
+    } catch(err) {
+      expect(err instanceof BadRequestError).toBeTruthy();
+    }
   })
 });
