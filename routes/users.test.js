@@ -249,15 +249,13 @@ describe("GET /users/:username/families/:familyId", function () {
   test("works", async function () {
     const resp = await request(app).get(`/users/u1/families/${testFamilyIds[0]}`);
     expect(resp.body).toEqual({
-      familyStatus: [
-       { 
-         familyId: testFamilyIds[0], 
-         status: "active",
-         isAdmin: false,
-         primaryFamily: false,
-         joinDate: moment().format("YYYYMMDD") 
-        }
-      ]
+      familyStatus: { 
+        familyId: testFamilyIds[0], 
+        status: "active",
+        isAdmin: false,
+        primaryFamily: false,
+        joinDate: moment().format("YYYYMMDD") 
+      }
     });
   });
 

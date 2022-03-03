@@ -96,7 +96,7 @@ async function commonBeforeAll() {
       username: "u1",
       familyId: testFamilyIds[1],
       workoutId: testWorkoutIds[0],
-      score: 101
+      score: 100
     }
   );
   const result4 = await Result.create(
@@ -115,14 +115,14 @@ async function commonBeforeAll() {
   const comment1 = await Comment.create(
     {
       resultId: testResultIds[0],
-      username: "u1",
+      username: "u2",
       content: "Comment content 1"
     }
   );
   const comment2 = await Comment.create(
     {
       resultId: testResultIds[1],
-      username: "u2",
+      username: "u1",
       content: "Comment content 2"
     }
   );

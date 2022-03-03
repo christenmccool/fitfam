@@ -261,7 +261,7 @@ class User {
         WHERE username=$1 AND family_id=$2`,
       [this.username, familyId]
     )
-    return res.rows;
+    return res.rows[0];
   }  
 
   /** Update family status

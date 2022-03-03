@@ -140,6 +140,7 @@ const Result = require("../models/result");
   }
 });
 
+
 /** GET /[username]/families/[familyId] => { familyStatus }
  * 
  * familyStatus is {familyId, status, isAdmin, primaryFamily, joinDate} 
@@ -156,6 +157,7 @@ const Result = require("../models/result");
     return next(err);
   }
 });
+
 
 /** PATCH /[username]/families/[familyId] {data} => { updatedStatus }
  *  data may include { status, isAdmin, primaryFamily }
