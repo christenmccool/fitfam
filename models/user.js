@@ -40,15 +40,15 @@ class User {
 
     const result = await db.query(
       `INSERT INTO users
-        (username, email, user_password, first_name, last_name, image_url, bio)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING username, 
-                 email,
-                 first_name AS "firstName", 
-                 last_name AS "lastName", 
-                 image_url AS "imageUrl",
-                 bio,
-                 TO_CHAR(join_date, 'YYYYMMDD') AS "joinDate"`,
+          (username, email, user_password, first_name, last_name, image_url, bio)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING username, 
+                  email,
+                  first_name AS "firstName", 
+                  last_name AS "lastName", 
+                  image_url AS "imageUrl",
+                  bio,
+                  TO_CHAR(join_date, 'YYYYMMDD') AS "joinDate"`,
       [username, email, password, firstName, lastName, imageUrl, bio]
     );
 
@@ -70,7 +70,7 @@ class User {
               image_url AS "imageUrl",
               bio,
               TO_CHAR(join_date, 'YYYYMMDD') AS "joinDate"
-       FROM users`
+        FROM users`
     );
     
     return res.rows.map(ele => new User(ele));
@@ -86,14 +86,14 @@ class User {
    static async find(username) {
     const res = await db.query(
       `SELECT username, 
-              email, 
-              first_name AS "firstName", 
-              last_name AS "lastName", 
-              image_url AS "imageUrl",
-              bio,
-              TO_CHAR(join_date, 'YYYYMMDD') AS "joinDate"
-       FROM users
-       WHERE username = $1`,
+                email, 
+                first_name AS "firstName", 
+                last_name AS "lastName", 
+                image_url AS "imageUrl",
+                bio,
+                TO_CHAR(join_date, 'YYYYMMDD') AS "joinDate"
+        FROM users
+        WHERE username = $1`,
       [username]
     );
 
@@ -110,8 +110,9 @@ class User {
 
   /** Update user data 
    *
-   * Data can include:
+   * data can include:
    *   { email, password, firstName, lastName, imageUrl, bio }
+   * At least one field is required
    *
    * Returns { email, username, email, firstName, lastName, imageUrl, bio, joinDate }
    *
@@ -130,15 +131,15 @@ class User {
 
     const res = await db.query(
       `UPDATE users 
-       ${setClause}
-       WHERE username = $${valuesArr.length + 1}
-       RETURNING username,
-                 email,
-                 first_name AS "firstName",
-                 last_name AS "lastName",
-                 image_url AS "imageUrl",
-                 bio,
-                 TO_CHAR(join_date, 'YYYYMMDD') AS "joinDate"`,        
+        ${setClause}
+        WHERE username = $${valuesArr.length + 1}
+        RETURNING username,
+                  email,
+                  first_name AS "firstName",
+                  last_name AS "lastName",
+                  image_url AS "imageUrl",
+                  bio,
+                  TO_CHAR(join_date, 'YYYYMMDD') AS "joinDate"`,        
       [...valuesArr, this.username]
     );
 
@@ -156,9 +157,9 @@ class User {
   async remove() {
     let res = await db.query(
       `DELETE
-       FROM users
-       WHERE username = $1
-       RETURNING username`,
+        FROM users
+        WHERE username = $1
+        RETURNING username`,
       [this.username],
     );
     const user = res.rows[0];
@@ -267,12 +268,12 @@ class User {
   }  
 
   /** Update family status
-   * Data must include: { familyId }
-   * Data can include: { status, isAdmin, primaryFamily }
+   * data can include: { status, isAdmin, primaryFamily }
+   *   At least one field is required
    *
    * Returns { familyId, status }
    **/
-  async updateFamilyStatus(familyId, status, isAdmin, primaryFamily) {
+  async updateFamilyStatus(familyId, data) {
     const checkFamilyId = await db.query(
       `SELECT id
         FROM families
@@ -295,24 +296,26 @@ class User {
 
     if (!family2) throw new BadRequestError(`Not a member of family: ${familyId}`);
 
-    let newStatus = status ? status : family2.status;
-    let newIsAdmin = isAdmin ? isAdmin : family2.isAdmin;
-    let newPrimaryFamily = primaryFamily ? primaryFamily : family2.primaryFamily;
+    const jstoSql = {
+      status: "family_status",
+      isAdmin: "is_admin",
+      primaryFamily: "primary_family"
+    }
+    const {setClause, valuesArr} = buildUpdateQuery(data, jstoSql);
 
     const res = await db.query(
-      `UPDATE users_families
-        SET family_status=$1,
-            is_admin=$2,
-            primary_family=$3
-        WHERE username=$4 AND family_id=$5
+      `UPDATE users_families 
+        ${setClause}
+        WHERE username=$${valuesArr.length + 1} AND family_id=$${valuesArr.length + 2}
         RETURNING 
           family_id AS "familyId", 
           family_status AS "status",
           is_admin AS "isAdmin",
           primary_family AS "primaryFamily",
-          TO_CHAR(join_date, 'YYYYMMDD') AS "joinDate"`,
-      [newStatus, newIsAdmin, newPrimaryFamily, this.username, familyId]
-    )
+          TO_CHAR(join_date, 'YYYYMMDD') AS "joinDate"`,        
+        [...valuesArr, this.username, familyId]
+    );
+    
     return res.rows[0];
   }
 }

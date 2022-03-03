@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "http://example.com/root.json",
+  "type": "object",
+  "minProperties": 1,
+  "properties": {
+    "status": {
+      "type": "string"
+    },
+    "isAdmin": {
+      "type": "boolean"
+    },
+    "primaryFamily": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false
+}

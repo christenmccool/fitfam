@@ -398,17 +398,11 @@ describe("joinFamily", function () {
 
     test("works", async function () {
       let user = await User.find("u1");
-      let updatedStatus = await user.updateFamilyStatus(testFamilyIds[0], 
-                                                        updateData.status, 
-                                                        updateData.isAdmin, 
-                                                        updateData.primaryFamily
-      );
+      let updatedStatus = await user.updateFamilyStatus(testFamilyIds[0], updateData);
 
       expect(updatedStatus).toEqual({
+        ...updateData,
         familyId: testFamilyIds[0],
-        status: "pending",
-        isAdmin: true,
-        primaryFamily: true,
         joinDate: moment().format("YYYYMMDD")
       })
     })
