@@ -5,7 +5,7 @@ An app to connect families along their fitness journeys. This repo contains the 
 FitFam allows family members to complete shared daily workouts posted on FitFam. Members log their workout results and respond to each other's efforts with comments. 
 
 ### Route Documentation
-Base routes are: /users, /families, /workouts, /results, /comments
+Base routes are: /users, /families, /workouts, /results, /comments  
 [Full documentation](https://docs.google.com/document/d/17ZsPlPCzKUuGaVEY3dASTgdiJyEMAEZvrxYDLYuMNx0/edit?usp=sharing)
 
 ### Database Schema
