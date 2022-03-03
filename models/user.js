@@ -3,6 +3,8 @@
 const db = require("../db");
 const { BadRequestError, NotFoundError } = require("../expressError");
 
+const { buildUpdateQuery } = require("../utils/sql");
+
 class User {
   constructor({ username, email, password, firstName, lastName, imageUrl, bio, joinDate, families }) {
     this.username = username;
@@ -109,27 +111,27 @@ class User {
   /** Update user data 
    *
    * Data can include:
-   *   { password, firstName, lastName, imageUrl, bio }
+   *   { email, password, firstName, lastName, imageUrl, bio }
    *
-   * Returns { username, email, firstName, lastName, imageUrl, bio, joinDate }
+   * Returns { email, username, email, firstName, lastName, imageUrl, bio, joinDate }
    *
    * Throws NotFoundError if not found.
    **/
-  async update({ password, firstName, lastName, imageUrl, bio }) {
-    let newPassword = password ? password : this.password;
-    let newFirstName = firstName ? firstName : this.firstName;
-    let newLastName = lastName ? lastName : this.lastName;
-    let newImageUrl = imageUrl ? imageUrl : this.imageUrl;
-    let newBio = bio ? bio : this.bio;
+  async update(data) {
+    const jstoSql = {
+      email: "email",
+      password: "user_password",
+      firstName: "first_name",
+      lastName: "last_name",
+      imageUrl: "image_url",
+      bio: "bio"
+    }
+    const {setClause, valuesArr} = buildUpdateQuery(data, jstoSql);
 
     const res = await db.query(
       `UPDATE users 
-       SET user_password=$1,
-           first_name=$2, 
-           last_name=$3, 
-           image_url=$4, 
-           bio=$5
-       WHERE username = $6
+       ${setClause}
+       WHERE username = $${valuesArr.length + 1}
        RETURNING username,
                  email,
                  first_name AS "firstName",
@@ -137,7 +139,7 @@ class User {
                  image_url AS "imageUrl",
                  bio,
                  TO_CHAR(join_date, 'YYYYMMDD') AS "joinDate"`,        
-      [newPassword, newFirstName, newLastName, newImageUrl, newBio, this.username]
+      [...valuesArr, this.username]
     );
 
     const user = res.rows[0];

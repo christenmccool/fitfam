@@ -4,11 +4,15 @@
 
 const express = require("express");
 
+const jsonschema = require("jsonschema");
 const router = express.Router();
+
 const { BadRequestError } = require("../expressError");
 
 const User = require("../models/user");
 const Result = require("../models/result");
+const userNewSchema = require("../schemas/userNew.json");
+const userUpdateSchema = require("../schemas/userUpdate.json");
 
 
 /** POST / { data }  => { user }
@@ -21,6 +25,12 @@ const Result = require("../models/result");
 
  router.post("/", async function (req, res, next) {
   try {
+    const validator = jsonschema.validate(req.body, userNewSchema);
+    if (!validator.valid) {
+      const errs = validator.errors.map(e => e.stack);
+      throw new BadRequestError(errs);
+    }
+
     const user = await User.create(req.body);
     return res.status(201).json({ user });
   } catch (err) {
@@ -69,13 +79,19 @@ const Result = require("../models/result");
 /** PATCH /[username] { data } => { user }
  *
  * Data can include:
- *   { password, firstName, lastName, imageUrl, bio }
+ *   { email, password, firstName, lastName, imageUrl, bio }
  *
  * Returns { username, email, firstName, lastName, imageUrl, bio, joinDate }
  **/
 
  router.patch("/:username", async function (req, res, next) {
   try {
+    const validator = jsonschema.validate(req.body, userUpdateSchema);
+    if (!validator.valid) {
+      const errs = validator.errors.map(e => e.stack);
+      throw new BadRequestError(errs);
+    }
+
     const {username} = req.params;
     let user = await User.find(username);
 

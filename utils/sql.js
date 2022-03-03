@@ -1,3 +1,5 @@
+const { BadRequestError } = require("../expressError");
+
 //Helper function to build a database query filtering workouts by date OR category and movementIds
 function buildWorkoutQuery(date, category, movementIds=[]) {
   let query = ``;
@@ -80,10 +82,33 @@ function buildResultQuery(workoutId, username, familyId) {
   return {query, data};
 }
 
+/** { data, jsToSql } => { setClause, valuesArr }
+ * Helper function to build the SET clause and values array for an UPDATE
+ *
+ * data is {field1: newVal1, field2: newVal1, ...}
+ * jsToSql is {jsName1: sql_name1, jsName2: sql_name2, ...}
+ * 
+ * set clause is `SET field1=$1, field2=$2, ...`
+ * valuesArr is [newVal1, newVal2, ...]
+ **/
+function buildUpdateQuery(data, jsToSql) {
+  const fields = Object.keys(data);
+  if (fields.length === 0) throw new BadRequestError("No data");
+
+  let setClause = "SET";
+
+  for (let i=0; i < fields.length; i++) {
+    let sqlName = jsToSql[fields[i]];
+    setClause += ` ${sqlName}=$${i+1},`;
+  }
+  setClause = setClause.slice(0, -1);
+
+  return {setClause, valuesArr: Object.values(data)}
+}
   
 
 
 
 
-module.exports = { buildWorkoutQuery, buildResultQuery };
+module.exports = { buildWorkoutQuery, buildResultQuery, buildUpdateQuery };
 

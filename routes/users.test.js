@@ -57,6 +57,55 @@ describe("POST /users", function () {
         });
     expect(resp.statusCode).toEqual(400);
   });
+
+  test("bad request if missing data", async function () {
+    const resp = await request(app)
+        .post("/users")
+        .send({
+          username: "u-new",
+        });
+    expect(resp.statusCode).toEqual(400);
+  });
+
+  test("bad request if extra data", async function () {
+    const resp = await request(app)
+        .post("/users")
+        .send({
+          username: "u-new",
+          email: "new@mail.com",
+          password: "password-new",
+          firstName: "First-new",
+          lastName: "Last-new",
+          extra: "extra-info"
+        });
+    expect(resp.statusCode).toEqual(400);
+  });
+
+  test("bad request if invalid data - email format", async function () {
+    const resp = await request(app)
+        .post("/users")
+        .send({
+          username: "u-new",
+          email: "not-an-email",
+          password: "password-new",
+          firstName: "First-new",
+          lastName: "Last-new",
+        });
+    expect(resp.statusCode).toEqual(400);
+  });
+
+  test("bad request if invalid data - too short password", async function () {
+    const resp = await request(app)
+        .post("/users")
+        .send({
+          username: "u-new",
+          email: "new@mail.com",
+          password: "new",
+          firstName: "First-new",
+          lastName: "Last-new",
+        });
+    expect(resp.statusCode).toEqual(400);
+  });
 });
 
 /************************************** GET /users */
@@ -161,6 +210,25 @@ describe("PATCH /users/:username", () => {
           firstName: "New",
         });
     expect(resp.statusCode).toEqual(404);
+  });
+
+  test("bad request if extra data", async function () {
+    const resp = await request(app)
+        .post("/users")
+        .send({
+          email: "new@mail.com",
+          extra: "extra-info"
+        });
+    expect(resp.statusCode).toEqual(400);
+  });
+
+  test("bad request if invalid data - email format", async function () {
+    const resp = await request(app)
+        .post("/users")
+        .send({
+          email: "not-an-email"
+        });
+    expect(resp.statusCode).toEqual(400);
   });
 });
 

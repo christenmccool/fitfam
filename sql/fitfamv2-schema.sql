@@ -6,7 +6,7 @@ CREATE TYPE curr_status AS ENUM (
 
 CREATE TABLE users (
   username text PRIMARY KEY,
-  email text NOT NULL UNIQUE,
+  email text NOT NULL,
   user_password text, 
   first_name text NOT NULL,
   last_name text NOT NULL,

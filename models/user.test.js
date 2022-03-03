@@ -212,6 +212,7 @@ describe("update", function () {
   const updateData = {
     firstName: "NewF",
     lastName: "NewL",
+    email: "new@mail.com",
     imageUrl: "newimage.com",
     bio: "Bio of new user"
   };
@@ -222,7 +223,6 @@ describe("update", function () {
 
     expect(updatedUser).toEqual({
       username: "u1",
-      email: "u1@mail.com",
       joinDate: moment().format("YYYYMMDD"),
       families: undefined,
       ...updateData
