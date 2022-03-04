@@ -3,22 +3,31 @@
 /** Routes for results. */
 
 const express = require("express");
+const jsonschema = require("jsonschema");
 
 const router = express.Router();
+
 const { BadRequestError } = require("../expressError");
 
 const Result = require("../models/result");
-
+const resultNewSchema = require("../schemas/resultNew.json");
+const resultUpdateSchema = require("../schemas/resultUpdate.json");
 
 /** POST / { data }  => { result }
  *
- * data must include { username, familyId, workoutId }
+ * data must include { userId, familyId, workoutId }
  * data may include { score, notes }
  * 
- * result is { id, username, familyId, workoutId, score, notes, dateCompleted }
+ * result is { id, userId, familyId, workoutId, score, notes, createDate, completeDate }
  **/
  router.post("/", async function (req, res, next) {
   try {
+    const validator = jsonschema.validate(req.body, resultNewSchema);
+    if (!validator.valid) {
+      const errs = validator.errors.map(e => e.stack);
+      throw new BadRequestError(errs);
+    }
+
     const result = await Result.create(req.body);
     return res.status(201).json({ result });
   } catch (err) {
@@ -32,16 +41,16 @@ const Result = require("../models/result");
  * 
  * Search filters:
  * - workoutId
- * - username
+ * - userId
  * - familyId
  * 
- * result is { id, username, familyId, workoutId, score, notes, dateCompleted }
+ * result is { id, userId, familyId, workoutId, score, notes, createDate, modifyDate, completeDate }
  **/
  router.get("/", async function (req, res, next) {
   try {  
-    const {workoutId, username, familyId} = req.query;
+    const {workoutId, userId, familyId} = req.query;
 
-    const results = await Result.findAll(workoutId, username, familyId);
+    const results = await Result.findAll(workoutId, userId, familyId);
 
     return res.json({ results });
   } catch (err) {
@@ -53,7 +62,7 @@ const Result = require("../models/result");
 /** GET /[id] => { result }
  * Returns workout result data given result id
  * 
- * result is { id, username, familyId, workoutId, score, notes, dateCompleted }
+ * result is { id, userId, familyId, workoutId, score, notes, createDate, modifyDate, completeDate }
  **/
  router.get("/:id", async function (req, res, next) {
   try {  
@@ -71,13 +80,19 @@ const Result = require("../models/result");
 /** PATCH /[id] { data } => { result }
  *
  * Data may include:
- *   { score, notes, date }
+ *   { score, notes, date, completeDate }
  *
- * Returns { id, username, familyId, workoutId, score, notes, dateCompleted }
+ * Returns { id, userId, familyId, workoutId, score, notes, createDate, modifyDate, completeDate }
  **/
 
  router.patch("/:id", async function (req, res, next) {
   try {
+    const validator = jsonschema.validate(req.body, resultUpdateSchema);
+    if (!validator.valid) {
+      const errs = validator.errors.map(e => e.stack);
+      throw new BadRequestError(errs);
+    }
+
     const {id} = req.params;
     let result = await Result.find(id);
 

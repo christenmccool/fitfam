@@ -120,24 +120,6 @@ class Family {
       [...valuesArr, this.id]
     );
 
-    // let newFamilyname = familyname ? familyname : this.familyname;
-    // let newImageUrl = imageUrl ? imageUrl : this.imageUrl;
-    // let newBio = bio ? bio : this.bio;
-
-    // const res = await db.query(
-    //   `UPDATE families 
-    //     SET family_name=$1,
-    //         image_url=$2, 
-    //         bio=$3
-    //     WHERE id = $4
-    //     RETURNING id,
-    //               familyname,
-    //               image_url AS "imageUrl",
-    //               bio,
-    //               TO_CHAR(creation_date, 'YYYYMMDD') AS "creationDate"`,        
-    //   [newFamilyname, newImageUrl, newBio, this.id]
-    // );
-
     const family = res.rows[0];
 
     if (!family) throw new NotFoundError(`No family: ${this.id}`);

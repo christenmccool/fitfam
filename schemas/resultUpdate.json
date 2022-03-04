@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "http://example.com/root.json",
+  "type": "object",
+  "minProperties": 1,
+  "properties": {
+    "score": {
+      "type": "integer"
+    },
+    "notes": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300
+    },
+    "completeDate": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "additionalProperties": false
+}

@@ -14,7 +14,7 @@ function buildWorkoutQuery(date, category, movementIds=[]) {
   }
 
   if (date || !movementIds.length) {
-    let param = date ? "wo_date" : "category";
+    let param = date ? "publish_date" : "category";
     data = date ? [date] : [category];
 
     query = `SELECT id, 
@@ -48,8 +48,8 @@ function buildWorkoutQuery(date, category, movementIds=[]) {
 }
 
 
-//Helper function to build a database query filtering results by workoutId and/or username/familyId
-function buildResultQuery(workoutId, username, familyId) {
+//Helper function to build a database query filtering results by workoutId and/or userId/familyId
+function buildResultQuery(workoutId, userId, familyId) {
   let data = [];
   let whereCond = '';
   let count = 1;
@@ -58,10 +58,10 @@ function buildResultQuery(workoutId, username, familyId) {
     count++;
     data.push(workoutId);
   }
-  if (username) {
-    whereCond = count === 1 ? whereCond + ` WHERE username=$${count}` : whereCond + ` AND username=$${count}`;
+  if (userId) {
+    whereCond = count === 1 ? whereCond + ` WHERE user_id=$${count}` : whereCond + ` AND user_id=$${count}`;
     count++;
-    data.push(username);
+    data.push(userId);
   }
   if (familyId) {
     whereCond = count === 1 ? whereCond + ` WHERE family_id=$${count}` : whereCond + ` AND family_id=$${count}`;
@@ -70,12 +70,14 @@ function buildResultQuery(workoutId, username, familyId) {
   }
 
   let query = `SELECT id,
-                    username, 
-                    family_id AS "familyId",
-                    workout_id AS "workoutId", 
-                    score, 
-                    notes,
-                    TO_CHAR(date_completed, 'YYYYMMDD') AS "dateCompleted"
+                      user_id AS "userId",
+                      family_id AS "familyId",
+                      workout_id AS "workoutId", 
+                      score, 
+                      notes,
+                      TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
+                      TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate",
+                      TO_CHAR(complete_date, 'YYYYMMDD') AS "completeDate"
         FROM results
         ${whereCond}`;
 

@@ -5,21 +5,31 @@
 const express = require("express");
 const moment = require("moment");
 
+const jsonschema = require("jsonschema");
 const router = express.Router();
+
 const { BadRequestError } = require("../expressError");
 
 const Workout = require("../models/workout");
-const Result = require("../models/result");
+const workoutNewSchema = require("../schemas/workoutNew.json");
+const workoutUpdateSchema = require("../schemas/workoutUpdate.json");
 
 
 /** POST / { data }  => { workout }
  *
- * data may include { swId, name, description, category, scoreType, date }
+ * data may include { swId, name, description, category, scoreType, publishDate }
+ * data must include at least one property
  *  
- * workout is { id, swId, name, description, category, score_type, date }
+ * workout is { id, swId, name, description, category, scoreType, createDate, publishDate }
  **/
  router.post("/", async function (req, res, next) {
   try {
+    const validator = jsonschema.validate(req.body, workoutNewSchema);
+    if (!validator.valid) {
+      const errs = validator.errors.map(e => e.stack);
+      throw new BadRequestError(errs);
+    }
+
     const workout = await Workout.create(req.body);
     return res.status(201).json({ workout });
   } catch (err) {
@@ -61,7 +71,7 @@ router.get("/", async function (req, res, next) {
 /** GET /[id] => { workout }
  * Returns workout details given workout id
  * 
- * workout is { id, swId, name, description, category, score_type, date }
+ * workout is { id, swId, name, description, category, scoreType, createDate, modifyDate, publishDate }
  **/
  router.get("/:id", async function (req, res, next) {
   try {  
@@ -79,13 +89,19 @@ router.get("/", async function (req, res, next) {
 /** PATCH /[id] { data } => { workout }
  *
  * Data can include:
- *   { swId, name, description, category, scoreType, date }
+ *   { swId, name, description, category, scoreType, publishDate }
  *
- * Returns { id, swId, name, description, category, score_type, date }
+ * Returns { id, swId, name, description, category, scoreType, createDate, modifyDate, publishDate }
  **/
 
  router.patch("/:id", async function (req, res, next) {
   try {
+    const validator = jsonschema.validate(req.body, workoutUpdateSchema);
+    if (!validator.valid) {
+      const errs = validator.errors.map(e => e.stack);
+      throw new BadRequestError(errs);
+    }
+
     const {id} = req.params;
     let workout = await Workout.find(id);
 
@@ -113,23 +129,6 @@ router.get("/", async function (req, res, next) {
   }
 });
 
-
-/** GET /[id]/results => { results: [ { result1, result2, ... } ] }
- * Returns list of results given workout id
- * 
- * result is { id, username, familyId, workoutId, score, notes, dateCompleted }
- **/
- router.get("/:id/results", async function (req, res, next) {
-  try {  
-    const {id} = req.params;
-
-    const results = await Result.findAll(id, null, null);
-
-    return res.json({ results });
-  } catch (err) {
-    return next(err);
-  }
-});
 
 
 module.exports = router;

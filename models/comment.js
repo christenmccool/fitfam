@@ -3,31 +3,34 @@
 const db = require("../db");
 const { NotFoundError } = require("../expressError");
 
+const { buildUpdateQuery } = require("../utils/sql");
+
 class Comment {
-  constructor({ id, resultId, username, content, date }) {
+  constructor({ id, resultId, userId, content, createDate, modifyDate }) {
     this.id = id;
     this.resultId = resultId;
-    this.username = username;
+    this.userId = userId;
     this.content = content;
-    this.date = date;
+    this.createDate = createDate;
+    this.modifyDate = modifyDate;
   }
 
   /** Create new comment
-   * data must include { resultId, username, content }
+   * data must include { resultId, userId, content }
    *
-   * Returns { id, resultId, username, content, date }
+   * Returns { id, resultId, userId, content, createDate }
    **/
-  static async create({ resultId, username, content }) {
+  static async create({ resultId, userId, content }) {
     const res = await db.query(
       `INSERT INTO comments 
-        (result_id, username, content)
+        (result_id, user_id, content)
         VALUES ($1, $2, $3)
         RETURNING id,
                   result_id AS "resultId",
-                  username, 
+                  user_id AS "userId",
                   content,
-                  TO_CHAR(comment_date, 'YYYYMMDD') AS "date"`,
-      [resultId, username, content]
+                  TO_CHAR(create_date, 'YYYYMMDD') AS "createDate"`,
+      [resultId, userId, content]
     );
 
     const comment = res.rows[0];
@@ -37,15 +40,16 @@ class Comment {
   
   /** Find all comments 
    *
-   * Returns [{ id, resultId, username, content, date }, ...]
+   * Returns [{ id, resultId, userId, content, createDate, modifyDate }, ...]
    * */
    static async findAll() {
     const res = await db.query(
       `SELECT id, 
               result_id AS "resultId", 
-              username, 
+              user_id AS "userId",
               content, 
-              TO_CHAR(comment_date, 'YYYYMMDD') AS "date"
+              TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
+              TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate"
        FROM comments`
     );
     
@@ -54,7 +58,7 @@ class Comment {
   
   /** Return data about a comment given comment id
    *
-   * Returns { id, resultId, username, content, date }
+   * Returns { id, resultId, userId, content, createDate, modifyDate }
    *
    * Throws NotFoundError if not found.
    **/
@@ -62,9 +66,10 @@ class Comment {
     const res = await db.query(
       `SELECT id,
               result_id AS "resultId", 
-              username, 
+              user_id AS "userId",
               content, 
-              TO_CHAR(comment_date, 'YYYYMMDD') AS "date"
+              TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
+              TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate"
         FROM comments
         WHERE id = $1`,
         [id]
@@ -80,23 +85,28 @@ class Comment {
    *
    * Data must include: { content }
    *
-   * Returns { id, resultId, username, content, date }
+   * Returns { id, resultId, userId, content, createDate, modifyDate }
    *
    * Throws NotFoundError if not found.
    */
-  async update({ content }) {
-    let newContent = content ? content : this.content;
-
+  async update(data) {
+    const jstoSql = {
+      content: "content"
+    }
+    let {setClause, valuesArr} = buildUpdateQuery(data, jstoSql);
+    setClause += `, modify_date=CURRENT_TIMESTAMP `;
+    console.log(setClause);
     const res = await db.query(
       `UPDATE comments 
-        SET content=$1
-        WHERE id = $2
+        ${setClause}
+        WHERE id = $${valuesArr.length + 1}
         RETURNING id,
                   result_id AS "resultId", 
-                  username, 
+                  user_id AS "userId",
                   content, 
-                  TO_CHAR(comment_date, 'YYYYMMDD') AS "date"`,       
-      [newContent, this.id]
+                  TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
+                  TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate"`,              
+      [...valuesArr, this.id]
     );
 
     const comment = res.rows[0];

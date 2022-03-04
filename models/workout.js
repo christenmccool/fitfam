@@ -5,7 +5,7 @@ const axios = require("axios");
 const db = require("../db");
 const { NotFoundError } = require("../expressError");
 
-const { buildWorkoutQuery } = require("../utils/sql");
+const { buildWorkoutQuery, buildUpdateQuery } = require("../utils/sql");
 
 const API_KEY = require("../secret");
 const SUGARWOD_BASE_URL = "https://api.sugarwod.com/v2";
@@ -13,24 +13,30 @@ const SUGARWOD_BASE_URL = "https://api.sugarwod.com/v2";
 /** Workout in the database. */
 
 class Workout {
-  constructor({ id, swId, name, description, scoreType, category, date }) {
+  constructor({ id, swId, name, description, scoreType, category, createDate, modifyDate, publishDate }) {
     this.id = id;
     this.swId = swId;
     this.name = name;
     this.description = description;
     this.scoreType = scoreType;
     this.category = category;
-    this.date = date;
+    this.createDate = createDate;
+    this.modifyDate = modifyDate;
+    this.publishDate = publishDate;
   }
 
   /** Create new workout
+   *    
+   * Data may include:
+   *   { swId, name, description, category, scoreType, publishDate }
+   * data must include at least one property
    *
-   * Returns { id, swId, name, description, category, score_type, date }
+   * Returns { id, swId, name, description, category, scoreType, createDate, publishDate }
    **/
-  static async create({ swId, name, description, category, scoreType, date }) {
+  static async create({ swId, name, description, category, scoreType, publishDate }) {
     const res = await db.query(
       `INSERT INTO workouts
-        (sw_id, wo_name, wo_description, category, score_type, wo_date)
+        (sw_id, wo_name, wo_description, category, score_type, publish_date)
         VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING id,
                   sw_id AS swId, 
@@ -38,12 +44,13 @@ class Workout {
                   wo_description AS description,
                   score_type AS "scoreType",
                   category,
-                  TO_CHAR(wo_date, 'YYYYMMDD') AS date`,
-      [swId, name, description, category, scoreType, date]
+                  TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
+                  TO_CHAR(publish_date, 'YYYYMMDD') AS "publishDate"`,
+      [swId, name, description, category, scoreType, publishDate]
     );
 
     const workout = res.rows[0];
-
+    
     return new Workout(workout);
   }
 
@@ -77,9 +84,9 @@ class Workout {
         //Store the workouts returned from the API in the database 
         for (let wo of resp.data.data) {
           const res = await db.query(
-            `INSERT INTO workouts (sw_id, wo_name, wo_description, category, score_type, wo_date)
-             VALUES ($1, $2, $3, $4, $5, $6)
-             RETURNING id, wo_name AS name`,
+            `INSERT INTO workouts (sw_id, wo_name, wo_description, category, score_type, publish_date)
+              VALUES ($1, $2, $3, $4, $5, $6)
+              RETURNING id, wo_name AS name`,
             [wo.id, wo.attributes.title, wo.attributes.description, "wod", wo.attributes.score_type, wo.attributes.scheduled_date_int]
           );
           workoutList.push(res.rows[0]);
@@ -99,7 +106,7 @@ class Workout {
 
   /** Given a workout id, return details about workout.
    *
-   * Returns { id, swId, name, description, category, score_type, date }
+   * Returns { id, swId, name, description, category, scoreType, createDate, modifyDate, publishDate }
    *
    * Throws NotFoundError if not found.
    **/
@@ -111,7 +118,9 @@ class Workout {
               wo_description AS description, 
               category,
               score_type AS "scoreType", 
-              TO_CHAR(wo_date, 'YYYYMMDD') AS date
+              TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
+              TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate",
+              TO_CHAR(publish_date, 'YYYYMMDD') AS "publishDate"
        FROM workouts
        WHERE id = $1`,
       [id]
@@ -133,31 +142,32 @@ class Workout {
    *
    * Throws NotFoundError if not found.
    **/
-   async update({ swId, name, description, category, scoreType, date }) {
-    let newSwId = swId ? swId : this.swId;
-    let newName = name ? name : this.name;
-    let newDescription = description ? description : this.description;
-    let newCategory = category ? category : this.category;
-    let newScoreType = scoreType ? scoreType : this.scoreType;
-    let newDate = date ? date : this.date;
+  async update(data) {
+    const jstoSql = {
+      swId: "sw_id",
+      name: "wo_name",
+      description: "wo_description",
+      category: "category",
+      scoreType: "score_type",
+      publishDate: "publish_date"
+    }
+    let {setClause, valuesArr} = buildUpdateQuery(data, jstoSql);
+    setClause += `, modify_date=CURRENT_TIMESTAMP `;
 
     const res = await db.query(
       `UPDATE workouts 
-       SET sw_id=$1,
-           wo_name=$2, 
-           wo_description=$3, 
-           category=$4, 
-           score_type=$5,
-           wo_date=$6
-       WHERE id = $7
-       RETURNING id,
-                  sw_id AS swId, 
-                  wo_name AS name,
-                  wo_description AS description,
-                  score_type AS "scoreType",
+        ${setClause}
+        WHERE id = $${valuesArr.length + 1}
+        RETURNING id, 
+                  sw_id AS "swId", 
+                  wo_name AS name, 
+                  wo_description AS description, 
                   category,
-                  TO_CHAR(wo_date, 'YYYYMMDD') AS date`,        
-      [newSwId, newName, newDescription, newCategory, newScoreType, newDate, this.id]
+                  score_type AS "scoreType", 
+                  TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
+                  TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate",
+                  TO_CHAR(publish_date, 'YYYYMMDD') AS "publishDate"`,              
+      [...valuesArr, this.id]
     );
 
     const workout = res.rows[0];
@@ -167,6 +177,8 @@ class Workout {
     return new Workout(workout);
   }
 
+
+  
   /** Delete workout 
    * 
    * Returns undefined
@@ -174,9 +186,9 @@ class Workout {
   async remove() {
     let res = await db.query(
       `DELETE
-       FROM workouts
-       WHERE id = $1
-       RETURNING id`,
+        FROM workouts
+        WHERE id = $1
+        RETURNING id`,
       [this.id],
     );
     const workout = res.rows[0];

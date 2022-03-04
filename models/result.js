@@ -3,38 +3,42 @@
 const db = require("../db");
 const { NotFoundError } = require("../expressError");
 
-const { buildResultQuery } = require("../utils/sql");
+const { buildResultQuery, buildUpdateQuery } = require("../utils/sql");
 
 class Result {
-  constructor({ id, username, familyId, workoutId, score, notes, dateCompleted }) {
+  constructor({ id, userId, familyId, workoutId, score, notes, createDate, modifyDate, completeDate }) {
     this.id = id;
-    this.username = username;
+    this.userId = userId;
     this.familyId = familyId;
     this.workoutId = workoutId;
     this.score = score;
     this.notes = notes;
-    this.dateCompleted = dateCompleted;
+    this.createDate = createDate;
+    this.modifyDate = modifyDate;
+    this.completeDate = completeDate;
   }
 
   /** Create new result
-   * data must include { username, familyId, workoutId }
-   * data may include { score, notes }
+   * data must include { userId, familyId, workoutId }
+   * data may include { score, notes, completeDate }
    *
-   * Returns { id, username, familyId, workoutId, score, notes, dateCompleted }
+   * Returns { id, username, familyId, workoutId, score, notes, createDate, completeDate }
    **/
-  static async create({ username, familyId, workoutId, score, notes }) {
+  static async create({ userId, familyId, workoutId, score, notes, completeDate }) {
     const res = await db.query(
       `INSERT INTO results 
-        (username, family_id, workout_id, score, notes)
-        VALUES ($1, $2, $3, $4, $5)
+        (user_id, family_id, workout_id, score, notes, complete_date)
+        VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING id,
-                  username, 
+                  user_id AS "userId",
                   family_id AS "familyId",
                   workout_id AS "workoutId", 
                   score, 
                   notes,
-                  TO_CHAR(date_completed, 'YYYYMMDD') AS "dateCompleted"`,
-      [username, familyId, workoutId, score, notes]
+                  TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
+                  TO_CHAR(complete_date, 'YYYYMMDD') AS "completeDate"`,
+
+      [userId, familyId, workoutId, score, notes, completeDate]
     );
 
     const result = res.rows[0];
@@ -42,31 +46,33 @@ class Result {
     return new Result(result);  
   }
   
-  /** Find all results given a workoutId and/or username and/or familyId 
+  /** Find all results given a workoutId and/or userId and/or familyId 
    *
-   * Returns [{ id, username, familyId, workoutId, score, notes, dateCompleted }, ...]
+   * Returns [{ id, userId, familyId, workoutId, score, notes, createDate, modifyDate, completeDate }, ...]
    * */
-   static async findAll(workoutId, username, familyId) {
-    const {query, data} = buildResultQuery(workoutId, username, familyId);
+  static async findAll(workoutId, userId, familyId) {
+    const {query, data} = buildResultQuery(workoutId, userId, familyId);
     const res = await db.query(query, data);
     return res.rows.map(ele => new Result(ele));
   }
   
   /** Return data about a workout result given result id
    *
-   * Returns { id, username, familyId, workoutId, score, notes, dateCompleted }
+   * Returns { id, userId, familyId, workoutId, score, notes, createDate, modifyDate, completeDate }
    *
    * Throws NotFoundError if not found.
    **/
   static async find(id) {
     const res = await db.query(
       `SELECT id,
-              username, 
+              user_id AS "userId", 
               family_id AS "familyId",
               workout_id AS "workoutId", 
               score, 
               notes,
-              TO_CHAR(date_completed, 'YYYYMMDD') AS "dateCompleted"
+              TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
+              TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate",
+              TO_CHAR(complete_date, 'YYYYMMDD') AS "completeDate"
         FROM results
         WHERE id = $1`,
         [id]
@@ -81,31 +87,35 @@ class Result {
   /** Update result data 
    *
    * Data may include:
-   *   { score, notes, date }
+   *   { score, notes, completeDate }
    *
-   * Returns { id, username, familyId, workoutId, score, notes, dateCompleted }
+   * Returns { id, userId, familyId, workoutId, score, notes, createDate, modifyDate, completeDate }
    *
    * Throws NotFoundError if not found.
    */
-  async update({ score, notes, dateCompleted }) {
-    let newScore = score ? score : this.score;
-    let newNotes = notes ? notes : this.notes;
-    let newDate = dateCompleted ? dateCompleted : this.dateCompleted;
+  async update(data) {
+    const jstoSql = {
+      score: "score",
+      notes: "notes",
+      completeDate: "complete_date"
+    }
+    let {setClause, valuesArr} = buildUpdateQuery(data, jstoSql);
+    setClause += `, modify_date=CURRENT_TIMESTAMP `;
 
     const res = await db.query(
       `UPDATE results 
-        SET score=$1,
-            notes=$2,
-            date_completed=$3
-        WHERE id = $4
+        ${setClause}
+        WHERE id = $${valuesArr.length + 1}
         RETURNING id,
-                  username, 
+                  user_id AS "userId", 
                   family_id AS "familyId",
                   workout_id AS "workoutId", 
                   score, 
                   notes,
-                  TO_CHAR(date_completed, 'YYYYMMDD') AS "dateCompleted"`,       
-      [newScore, newNotes, newDate, this.id]
+                  TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
+                  TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate",
+                  TO_CHAR(complete_date, 'YYYYMMDD') AS "completeDate"`,              
+      [...valuesArr, this.id]
     );
 
     const result = res.rows[0];
@@ -122,9 +132,9 @@ class Result {
   async remove() {
     let res = await db.query(
       `DELETE
-       FROM results
-       WHERE id = $1
-       RETURNING id`,
+        FROM results
+        WHERE id = $1
+        RETURNING id`,
       [this.id],
     );
     const result = res.rows[0];

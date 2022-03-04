@@ -3,21 +3,30 @@
 /** Routes for results. */
 
 const express = require("express");
+const jsonschema = require("jsonschema");
 
 const router = express.Router();
 const { BadRequestError } = require("../expressError");
 
 const Comment = require("../models/comment");
+const commentNewSchema = require("../schemas/commentNew.json");
+const commentUpdateSchema = require("../schemas/commentUpdate.json");
 
 
 /** POST / { data }  => { comment }
  *
- * data must include { resultId, username, content }
+ * data must include { resultId, userId, content }
  * 
- * comment is { id, resultId, username, content, date }
+ * comment is { id, resultId, userId, content, createDate }
  **/
  router.post("/", async function (req, res, next) {
   try {    
+    const validator = jsonschema.validate(req.body, commentNewSchema);
+    if (!validator.valid) {
+      const errs = validator.errors.map(e => e.stack);
+      throw new BadRequestError(errs);
+    }
+
     const comment = await Comment.create(req.body);
     return res.status(201).json({ comment });
   } catch (err) {
@@ -29,7 +38,7 @@ const Comment = require("../models/comment");
 /** GET / => { comments: [ { comment1, comment2, ... } ] }
  * Returns a list of results
  * 
- * comment is { id, resultId, username, content, date }
+ * comment is { id, resultId, userId, content, createDate, modifyDate }
  **/
  router.get("/", async function (req, res, next) {
   try {  
@@ -45,7 +54,7 @@ const Comment = require("../models/comment");
 /** GET /[id] => { comment }
  * Returns comment data given comment id
  * 
- * comment is { id, resultId, username, content, date }
+ * comment is { id, resultId, userId, content, createDate, modifyDate }
  **/
  router.get("/:id", async function (req, res, next) {
   try {  
@@ -65,11 +74,18 @@ const Comment = require("../models/comment");
  * Data must include:
  *   { content }
  *
- * Returns { id, resultId, username, content, date }
+ * Returns { id, resultId, userId, content, createDate, modifyDate }
  **/
 
  router.patch("/:id", async function (req, res, next) {
   try {
+    console.log(req.body)
+    const validator = jsonschema.validate(req.body, commentUpdateSchema);
+    if (!validator.valid) {
+      const errs = validator.errors.map(e => e.stack);
+      throw new BadRequestError(errs);
+    }
+
     const {id} = req.params;
     let comment = await Comment.find(id);
 
