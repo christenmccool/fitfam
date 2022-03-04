@@ -178,7 +178,6 @@ class Workout {
   }
 
 
-  
   /** Delete workout 
    * 
    * Returns undefined

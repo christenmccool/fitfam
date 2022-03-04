@@ -2,12 +2,12 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "http://example.com/root.json",
   "type": "object",
-  "minProperties": 1,
   "properties": {
-    "password": {
+    "email": {
       "type": "string",
-      "minLength": 5,
-      "maxLength": 20
+      "minLength": 6,
+      "maxLength": 60,
+      "format": "email"
     },
     "firstName": {
       "type": "string",
@@ -22,10 +22,6 @@
     "userStatus": {
       "type": "string",
       "enum": ["active", "pending", "blocked", "inactive"]
-    },
-    "imageUrl": {
-      "type": "string",
-      "format": "uri-reference"
     },
     "bio": {
       "type": "string",

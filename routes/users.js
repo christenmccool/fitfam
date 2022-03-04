@@ -11,6 +11,7 @@ const { BadRequestError } = require("../expressError");
 
 const User = require("../models/user");
 const userNewSchema = require("../schemas/userNew.json");
+const userSearchSchema = require("../schemas/userSearch.json");
 const userUpdateSchema = require("../schemas/userUpdate.json");
 const usersFamiliesUpdateSchema = require("../schemas/usersFamiliesUpdate.json");
 
@@ -18,9 +19,11 @@ const usersFamiliesUpdateSchema = require("../schemas/usersFamiliesUpdate.json")
 /** POST / { data }  => { user }
  *
  * data must include { email, password, firstName, lastName }
- * data may include { imageUrl, bio }
+ * data may include { userStatus, imageUrl, bio }
  * 
- * user is { id, email, firstName, lastName, imageUrl, bio, createDate }
+ * user is { id, email, firstName, lastName, userStatus, imageUrl, bio, createDate, modifyDate, families }
+ * families is initialized as an empty array
+ * join a family with users/[id]/families route
  **/
 
  router.post("/", async function (req, res, next) {
@@ -40,15 +43,28 @@ const usersFamiliesUpdateSchema = require("../schemas/usersFamiliesUpdate.json")
 });
 
 
-/** GET / => { users: [ { user1, user2, ... } ] }
- * Returns a list of users
+/** GET / => { users: [ user1, user2, ...] }
+ * Returns a list of all users matching optional filtering criteria
  * 
- * user is { id, email, firstName, lastName, imageUrl, bio, createDate, modifyDate }
+ * Search filters:
+ * - email
+ * - firstName
+ * - lastName
+ * - userStatus
+ * - bio (key word search)
+ * 
+ * user is { id, email, firstName, lastName, userStatus, bio }
  **/
 
  router.get("/", async function (req, res, next) {
   try {  
-    const users = await User.findAll();
+    const validator = jsonschema.validate(req.query, userSearchSchema);
+    if (!validator.valid) {
+      const errs = validator.errors.map(e => e.stack);
+      throw new BadRequestError(errs);
+    }
+
+    const users = await User.findAll(req.query);
 
     return res.json({ users });
   } catch (err) {
@@ -60,7 +76,7 @@ const usersFamiliesUpdateSchema = require("../schemas/usersFamiliesUpdate.json")
 /** GET /[id] => { user }
  * Returns user data given user id
  * 
- * user is { id, email, firstName, lastName, imageUrl, bio, createDate, modifyDate, families }
+ * user is { id, email, firstName, lastName, userStatus, imageUrl, bio, createDate, modifyDate, families }
  * 
  * families is [ family1, family2, ... ]
  *    where family is { familyId, familyname, status, isAdmin, primaryFamily, createDate, modifyDate }
@@ -81,10 +97,10 @@ const usersFamiliesUpdateSchema = require("../schemas/usersFamiliesUpdate.json")
 /** PATCH /[id] { data } => { user }
  *
  * Data can include:
- *   { password, firstName, lastName, imageUrl, bio }
+ *   { password, firstName, lastName, userStatus, imageUrl, bio }
  * Must include at least one property
  *
- * Returns { id, email, firstName, lastName, imageUrl, bio, createDate, modifyDate }
+ * Returns { id, email, firstName, lastName, userStatus, imageUrl, bio, createDate, modifyDate }
  **/
 
  router.patch("/:id", async function (req, res, next) {

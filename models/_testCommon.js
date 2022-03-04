@@ -12,15 +12,24 @@ async function commonBeforeAll() {
   await db.query("DELETE FROM results");
   await db.query("DELETE FROM comments");
 
-  const userResults = await db.query(
-    `INSERT INTO users (email, user_password, first_name, last_name, image_url, bio)
-      VALUES ('u1@mail.com', 'password1', 'First1', 'Last1', null, null),
-             ('u2@mail.com', 'password2', 'First2', 'Last2', 'user2image.com', null),
-             ('u3@mail.com', 'password3', 'First3', 'Last3', 'user3image.com', 'Bio of u3')
+  const user1 = await db.query(
+    `INSERT INTO users (email, user_password, first_name, last_name)
+      VALUES ('u1@mail.com', 'password1', 'First1', 'Last1')
       RETURNING id`
   );
-
-  testUserIds.push(...userResults.rows.map(ele => ele.id));
+  const user2 = await db.query(
+    `INSERT INTO users (email, user_password, first_name, last_name, image_url)
+      VALUES ('u2@mail.com', 'password2', 'First2', 'Last2', 'user2image.com')
+      RETURNING id`
+  );
+  const user3 = await db.query(
+    `INSERT INTO users (email, user_password, first_name, last_name, image_url, bio)
+      VALUES ('u3@mail.com', 'password3', 'First3', 'Last3', 'user3image.com', 'Bio of u3')
+      RETURNING id`
+  );
+  testUserIds.push(user1.rows[0].id);
+  testUserIds.push(user2.rows[0].id);
+  testUserIds.push(user3.rows[0].id);
 
   const familyResults = await db.query(
     `INSERT INTO families (family_name)

@@ -5,7 +5,8 @@
   "minProperties": 1,
   "properties": {
     "status": {
-      "type": "string"
+      "type": "string",
+      "enum": ["active", "pending", "blocked", "inactive"]
     },
     "isAdmin": {
       "type": "boolean"

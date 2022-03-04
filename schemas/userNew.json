@@ -29,6 +29,10 @@
       "minLength": 1,
       "maxLength": 30
     },
+    "userStatus": {
+      "type": "string",
+      "enum": ["active", "pending", "blocked", "inactive"]
+    },
     "imageUrl": {
       "type": "string",
       "format": "uri-reference"

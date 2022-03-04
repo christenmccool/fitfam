@@ -1,18 +1,17 @@
 /** User class. */
-const moment = require("moment");
-
 const db = require("../db");
 const { BadRequestError, NotFoundError } = require("../expressError");
 
-const { buildUpdateQuery } = require("../utils/sql");
+const { buildInsertQuery, buildSelectQuery, buildUpdateQuery } = require("../utils/sql");
 
 class User {
-  constructor({ id, email, password, firstName, lastName, imageUrl, bio, createDate, modifyDate, families }) {
+  constructor({ id, email, password, firstName, lastName, userStatus, imageUrl, bio, createDate, modifyDate, families=[] }) {
     this.id = id;
     this.email = email;
     this.password = password;
     this.firstName = firstName;
     this.lastName = lastName;
+    this.userStatus = userStatus;
     this.imageUrl = imageUrl;
     this.bio = bio;
     this.createDate = createDate;
@@ -22,68 +21,102 @@ class User {
 
   /** Create new user
    * data must include { email, password, firstName, lastName }
-   * data may include { imageUrl, bio }
+   * data may include { userStatus, imageUrl, bio }
    *
-   * Returns { id, email, firstName, lastName, imageUrl, bio, createDate, modifyDate }
+   * Returns { id, email, firstName, lastName, userStatus, imageUrl, bio, createDate, modifyDate, families }
+   * where families is an empty array 
    *
    * Throws BadRequestError on duplicates
    **/
-  static async create({ email, password, firstName, lastName, imageUrl, bio }) {
+  static async create(data) {
     const duplicateCheck = await db.query(
       `SELECT email
         FROM users
         WHERE email = $1`,
-      [email]
+      [data.email]
     );
 
     if (duplicateCheck.rows[0]) {
-      throw new BadRequestError(`Duplicate email: ${email}`);
+      throw new BadRequestError(`Duplicate email: ${data.email}`);
     }
 
-    const result = await db.query(
-      `INSERT INTO users
-          (email, user_password, first_name, last_name, image_url, bio)
-        VALUES ($1, $2, $3, $4, $5, $6)
+    const jstoSql = {
+      email: "email",
+      password: "user_password",
+      firstName: "first_name",
+      lastName: "last_name",
+      userStatus: "user_status",
+      imageUrl: "image_url",
+      bio: "bio"
+    }
+    let {insertClause, valuesArr} = buildInsertQuery(data, jstoSql);
+
+    const res = await db.query(
+      `INSERT INTO users 
+        ${insertClause}
         RETURNING id, 
                   email,
                   first_name AS "firstName", 
                   last_name AS "lastName", 
+                  user_status AS "userStatus",
                   image_url AS "imageUrl",
                   bio,
-                  TO_CHAR(create_date, 'YYYYMMDD') AS "createDate"`,
-      [email, password, firstName, lastName, imageUrl, bio]
+                  TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
+                  TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate"`,             
+      [...valuesArr]
     );
 
-    const user = result.rows[0];
+    const user = res.rows[0];
 
     return new User(user);
   }
 
-  /** Find all users
+  /** Find all users matching optional filtering criteria
+   * Filters are email, firstName, lastName, userStatus, bio (for key word)
    *
-   * Returns [{ id, email, firstName, lastName, imageUrl, bio, createDate, modifyDate }, ...]
+   * Returns [ user1, user2, ... ]
+   * where user is { id, email, firstName, lastName, userStatus, bio }
    **/
-  static async findAll() {
+  static async findAll(data) {
+    const jstoSql = {
+      email: "email",
+      firstName: "first_name",
+      lastName: "last_name",
+      userStatus: "user_status",
+      bio: "bio"
+    }
+
+    const compOp = {
+      email: "ILIKE",
+      firstName: "ILIKE",
+      lastName: "ILIKE",
+      userStatus: "=",
+      bio: "ILIKE"
+    }
+
+    let {whereClause, valuesArr} = buildSelectQuery(data, jstoSql, compOp);
+
     const res = await db.query(
-      `SELECT id, 
+      `SELECT id,
               email, 
-              first_name AS "firstName", 
-              last_name AS "lastName", 
-              image_url AS "imageUrl",
-              bio,
-              TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
-              TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate"
-        FROM users`
+              first_name AS "firstName",
+              last_name AS "lastName",
+              user_status AS "userStatus",
+              bio 
+        FROM users
+        ${whereClause}
+        ORDER BY ID`,
+      [...valuesArr]
     );
-    
-    return res.rows.map(ele => new User(ele));
+
+    return res.rows;
   }
 
   /** Given a user id, return data about user, including families
    *
-   * Returns { is, email, firstName, lastName, imageUrl, bio, createDate, modifyDate, families }
+   * Returns { id, email, firstName, lastName, userStatus, imageUrl, bio, createDate, modifyDate, families }
    * families is [ family1, family2, ... ]
-   *    where family is { familyId, familyname, status, isAdmin, primaryFamily, createDate, modifyDate }
+   *    where family is { familyId, familyname, memStatus, isAdmin, primaryFamily }
    *
    * Throws NotFoundError if not found.
    **/
@@ -93,6 +126,7 @@ class User {
               email, 
               first_name AS "firstName", 
               last_name AS "lastName", 
+              user_status AS "userStatus",
               image_url AS "imageUrl",
               bio,
               TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
@@ -106,20 +140,31 @@ class User {
 
     if (!user) throw new NotFoundError(`No user: ${id}`);
 
-    user = new User(user);
-    const families = await user.findFamilies();
-    user.families = families;
+    const famRes = await db.query(
+      `SELECT uf.family_id AS "familyId",
+              f.family_name AS "familyName",
+              uf.mem_status AS "memStatus",
+              uf.is_admin AS "isAdmin",
+              uf.primary_family AS "primaryFamily"
+        FROM users_families uf
+        JOIN families f
+        ON uf.family_id = f.id
+        WHERE uf.user_id=$1`,
+      [id]
+    );
+        
+    let families = famRes.rows;
 
-    return user;
+    return new User( {...user, families} );
   }
 
   /** Update user data 
    *
    * data can include:
-   *   { password, firstName, lastName, imageUrl, bio }
+   *   { password, firstName, lastName, userStatus, imageUrl, bio }
    * At least one property is required
    *
-   * Returns { id, username, email, firstName, lastName, imageUrl, bio, createDate, modifyDate }
+   * Returns { id, username, email, firstName, lastName, userStatus, imageUrl, bio, createDate, modifyDate }
    *
    * Throws NotFoundError if not found.
    **/
@@ -128,6 +173,7 @@ class User {
       password: "user_password",
       firstName: "first_name",
       lastName: "last_name",
+      userStatus: "user_status",
       imageUrl: "image_url",
       bio: "bio"
     }
@@ -142,6 +188,7 @@ class User {
                   email,
                   first_name AS "firstName",
                   last_name AS "lastName",
+                  user_status AS "userStatus",
                   image_url AS "imageUrl",
                   bio,
                   TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
@@ -149,11 +196,26 @@ class User {
       [...valuesArr, this.id]
     );
 
-    const user = res.rows[0];
+    let user = res.rows[0];
 
     if (!user) throw new NotFoundError(`No user: ${this.username}`);
 
-    return new User(user);
+    const famRes = await db.query(
+      `SELECT uf.family_id AS "familyId",
+              f.family_name AS "familyName",
+              uf.mem_status AS "memStatus",
+              uf.is_admin AS "isAdmin",
+              uf.primary_family AS "primaryFamily"
+        FROM users_families uf
+        JOIN families f
+        ON uf.family_id = f.id
+        WHERE uf.user_id=$1`,
+      [this.id]
+    );
+        
+    let families = famRes.rows;
+
+    return new User( {...user, families} );
   }
 
   /** Delete user 
@@ -177,7 +239,6 @@ class User {
   /** Join family 
    *
    * Returns {familyId, status, isAdmin, primaryFamily, createDate}
-   * where status is default value of "active"
    **/
   async joinFamily(familyId) {
     const checkFamilyId = await db.query(
@@ -205,7 +266,7 @@ class User {
         VALUES ($1, $2)
         RETURNING 
           family_id AS "familyId",
-          family_status AS "status",
+          mem_status AS "memStatus",
           is_admin AS "isAdmin",
           primary_family AS "primaryFamily",
           TO_CHAR(create_date, 'YYYYMMDD') AS "createDate"`,
@@ -223,7 +284,7 @@ class User {
     const res = await db.query(
       `SELECT uf.family_id AS "familyId",
               f.family_name AS "familyName",
-              uf.family_status AS "status",
+              uf.mem_status AS "memStatus",
               uf.is_admin AS "isAdmin",
               uf.primary_family AS "primaryFamily",
               TO_CHAR(uf.create_date, 'YYYYMMDD') AS "createDate",
@@ -263,7 +324,7 @@ class User {
 
     const res = await db.query(
       `SELECT family_id AS "familyId",
-              family_status AS "status",
+              uf.mem_status AS "memStatus",
               is_admin AS "isAdmin",
               primary_family AS "primaryFamily",
               TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
@@ -293,7 +354,7 @@ class User {
 
     const checkInFamily = await db.query(
       `SELECT family_id,
-              family_status AS status,
+              uf.mem_status AS "memStatus",
               is_admin AS "isAdmin",
               primary_family AS "primaryFamily"
         FROM users_families
