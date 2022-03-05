@@ -24,24 +24,25 @@ afterAll(commonAfterAll);
 
 describe("POST /users", function () {
   test("works with required data", async function () {
+    const data = {
+      email: "new@mail.com",
+      firstName: "First-new",
+      lastName: "Last-new"
+    }
     const resp = await request(app).post("/users")
         .send({
-          email: "new@mail.com",
-          password: "password-new",
-          firstName: "First-new",
-          lastName: "Last-new"
+          ...data,
+          password: "password-new"
         });
     expect(resp.statusCode).toEqual(201);
     expect(resp.body).toEqual({
       user: {
         id: expect.any(Number),
-        email: "new@mail.com",
-        firstName: "First-new",
-        lastName: "Last-new",
+        ...data,
         userStatus: "active",
-        createDate: moment().format("YYYYMMDD"),
         imageUrl: null,
         bio: null,
+        createDate: moment().format("YYYYMMDD"),
         modifyDate: null,
         families: []
       }
@@ -49,25 +50,26 @@ describe("POST /users", function () {
   });
 
   test("works with optional data", async function () {
+    const data = {
+      email: "new@mail.com",
+      firstName: "First-new",
+      lastName: "Last-new",
+      bio: "Bio of new user"
+    }
+
     const resp = await request(app).post("/users")
         .send({
-          email: "new@mail.com",
-          password: "password-new",
-          firstName: "First-new",
-          lastName: "Last-new",
-          bio: "Bio of new user"
+          ...data,
+          password: "password-new"
         });
     expect(resp.statusCode).toEqual(201);
     expect(resp.body).toEqual({
       user: {
         id: expect.any(Number),
-        email: "new@mail.com",
-        firstName: "First-new",
-        lastName: "Last-new",
+        ...data,
         userStatus: "active",
-        createDate: moment().format("YYYYMMDD"),
-        bio:  "Bio of new user",
         imageUrl: null,
+        createDate: moment().format("YYYYMMDD"),
         modifyDate: null,
         families: []
       }
@@ -75,13 +77,12 @@ describe("POST /users", function () {
   });
 
   test("bad request if duplicate user", async function () {
-    const resp = await request(app)
-        .post("/users")
+    const resp = await request(app).post("/users")
         .send({
           email: "u1@mail.com",
-          password: "password1",
           firstName: "First1",
-          lastName: "Last1"
+          lastName: "Last1",
+          password: "password-new"
         });
     expect(resp.statusCode).toEqual(400);
   });
@@ -167,9 +168,97 @@ describe("GET /users", function () {
       ]
     });
   });
+
+  test("works for search filter -- firstName partial match", async function () {
+    const resp = await request(app).get(`/users?firstName=First`);
+    expect(resp.body).toEqual({
+      users: [
+        {
+          id: testUserIds[0],
+          email: "u1@mail.com",
+          firstName: "First1",
+          lastName: "Last1",
+          userStatus: "active",
+          bio: null
+        },
+        {
+          id: testUserIds[1],
+          email: "u2@mail.com",
+          firstName: "First2",
+          lastName: "Last2",
+          userStatus: "active",
+          bio: null
+        },
+        {
+          id: testUserIds[2],
+          email: "u3@mail.com",
+          firstName: "First3",
+          lastName: "Last3",
+          userStatus: "active",
+          bio: "Bio of u3"
+        }
+      ]
+    });
+  });
+
+  test("works for search filter -- bio key word", async function () {
+    const resp = await request(app).get(`/users?bio=u3`);
+    expect(resp.body).toEqual({
+      users: [
+        {
+          id: testUserIds[2],
+          email: "u3@mail.com",
+          firstName: "First3",
+          lastName: "Last3",
+          userStatus: "active",
+          bio: "Bio of u3"
+        }
+      ]
+    });
+  });
+
+  test("works for search filter -- userStatus with match", async function () {
+    const resp = await request(app).get(`/users?userStatus=active`);
+    expect(resp.body).toEqual({
+      users: [
+        {
+          id: testUserIds[0],
+          email: "u1@mail.com",
+          firstName: "First1",
+          lastName: "Last1",
+          userStatus: "active",
+          bio: null
+        },
+        {
+          id: testUserIds[1],
+          email: "u2@mail.com",
+          firstName: "First2",
+          lastName: "Last2",
+          userStatus: "active",
+          bio: null
+        },
+        {
+          id: testUserIds[2],
+          email: "u3@mail.com",
+          firstName: "First3",
+          lastName: "Last3",
+          userStatus: "active",
+          bio: "Bio of u3"
+        }
+      ]
+    });
+    
+  });
+
+  test("works for search filter -- userStatus with no match", async function () {
+    const resp = await request(app).get(`/users?userStatus=pending`);
+    expect(resp.body).toEqual({
+      users: []
+    });
+  });
 });
 
-// /************************************** GET /users/:id */
+/************************************** GET /users/:id */
 
 describe("GET /users/:id", function () {
   test("works", async function () {
@@ -192,6 +281,13 @@ describe("GET /users/:id", function () {
             memStatus: "active",
             isAdmin: false,
             primaryFamily: false  
+          },
+          { 
+            familyId: testFamilyIds[1],
+            familyName: "fam2",
+            memStatus: "active",
+            isAdmin: false,
+            primaryFamily: false  
           }
         ]
       }
@@ -204,7 +300,7 @@ describe("GET /users/:id", function () {
   });
 });
 
-// /************************************** PATCH /users/:id */
+/************************************** PATCH /users/:id */
 
 describe("PATCH /users/:id", () => {
   test("works", async function () {
@@ -231,6 +327,13 @@ describe("PATCH /users/:id", () => {
             memStatus: "active",
             isAdmin: false,
             primaryFamily: false 
+          },
+          { 
+            familyId: testFamilyIds[1],
+            familyName: "fam2",
+            memStatus: "active",
+            isAdmin: false,
+            primaryFamily: false 
           }
         ]
       }
@@ -244,6 +347,13 @@ describe("PATCH /users/:id", () => {
           firstName: "New",
         });
     expect(resp.statusCode).toEqual(404);
+  });
+
+  test("bad request if no data", async function () {
+    const resp = await request(app)
+        .patch(`/users/${testUserIds[0]}`)
+        .send({});
+    expect(resp.statusCode).toEqual(400);
   });
 
   test("bad request if extra data", async function () {
@@ -266,7 +376,7 @@ describe("PATCH /users/:id", () => {
   });
 });
 
-// /************************************** DELETE /users/:id */
+/************************************** DELETE /users/:id */
 
 describe("DELETE /users/:username", function () {
   test("works", async function () {
@@ -280,163 +390,3 @@ describe("DELETE /users/:username", function () {
   });
 });
 
-// /************************************** POST /users/:id/families/:familyId */
-
-// describe("POST /users/:id/families/:familyId", function () {
-//   test("works", async function () {
-//     const resp = await request(app)
-//         .post(`/users/${testUserIds[1]}/families/${testFamilyIds[0]}`);
-//     expect(resp.body).toEqual({
-//       familyStatus: 
-//         { 
-//           familyId: testFamilyIds[0], 
-//           status: "active",
-//           isAdmin: false,
-//           primaryFamily: false,
-//           createDate: moment().format("YYYYMMDD")
-//         }
-//     });
-//   });
-
-//   test("not found for no such familyId", async function () {
-//     const resp = await request(app)
-//         .post(`/users/${testUserIds[1]}/families/0`);
-//     expect(resp.statusCode).toEqual(404);
-//   });
-
-//   test("bad request if already a member of family", async function () {
-//     const resp = await request(app)
-//         .post(`/users/${testUserIds[0]}/families/${testFamilyIds[0]}`);
-//     expect(resp.statusCode).toEqual(400);
-//   });
-// });
-
-// // /************************************** Get /users/:id/families */
-
-// describe("GET /users/:id/families", function () {
-//   test("works", async function () {
-//     const resp = await request(app).get(`/users/${testUserIds[0]}/families`);
-//     expect(resp.body).toEqual({
-//       families: [
-//        { 
-//          familyId: testFamilyIds[0], 
-//          familyName: "fam1",
-//          status: "active",
-//          isAdmin: false,
-//          primaryFamily: false,
-//          createDate: moment().format("YYYYMMDD"),
-//          modifyDate: null
-//         }
-//       ]
-//     });
-//   });
-// });
-
-// // /************************************** Get /users/:id/families/:familyId */
-
-// describe("GET /users/:id/families/:familyId", function () {
-//   test("works", async function () {
-//     const resp = await request(app).get(`/users/${testUserIds[0]}/families/${testFamilyIds[0]}`);
-//     expect(resp.body).toEqual({
-//       familyStatus: { 
-//         familyId: testFamilyIds[0], 
-//         status: "active",
-//         isAdmin: false,
-//         primaryFamily: false,
-//         createDate: moment().format("YYYYMMDD"), 
-//         modifyDate: null
-//       }
-//     });
-//   });
-
-//   test("not found for no such familyId", async function () {
-//     const resp = await request(app)
-//         .get(`/users/${testUserIds[0]}/families/0`);
-//     expect(resp.statusCode).toEqual(404);
-//   });
-
-//   test("bad request if not a member of family", async function () {
-//     const resp = await request(app)
-//         .get(`/users/${testUserIds[0]}/families/${testFamilyIds[1]}`);
-//     expect(resp.statusCode).toEqual(400);
-//   });
-// });
-
-// // /************************************** PATCH /users/:id/families/:familyId */
-
-// describe("PATCH /users/:id/families/:familyId", function () {
-//   test("works for change in status", async function () {
-//     const resp = await request(app)
-//         .patch(`/users/${testUserIds[0]}/families/${testFamilyIds[0]}`)
-//         .send({
-//           "status":"inactive"
-//         });
-//     expect(resp.body).toEqual({
-//       updatedStatus: 
-//         { 
-//           familyId: testFamilyIds[0], 
-//           status: "inactive",
-//           isAdmin: false,
-//           primaryFamily: false,
-//           createDate: moment().format("YYYYMMDD"),
-//           modifyDate: moment().format("YYYYMMDD")
-//         }
-//     });
-//   });
-
-//   test("works for change in isAdmin", async function () {
-//     const resp = await request(app)
-//         .patch(`/users/${testUserIds[0]}/families/${testFamilyIds[0]}`)
-//         .send({
-//           "isAdmin":true
-//         });
-//     expect(resp.body).toEqual({
-//       updatedStatus: 
-//         { 
-//           familyId: testFamilyIds[0], 
-//           status: "active",
-//           isAdmin: true,
-//           primaryFamily: false,
-//           createDate: moment().format("YYYYMMDD"),
-//           modifyDate: moment().format("YYYYMMDD")
-//         }
-//     });
-//   });
-
-//   test("works for change in primaryFamily", async function () {
-//     const resp = await request(app)
-//         .patch(`/users/${testUserIds[0]}/families/${testFamilyIds[0]}`)
-//         .send({
-//           "primaryFamily":true
-//         });
-//     expect(resp.body).toEqual({
-//       updatedStatus: 
-//         { 
-//           familyId: testFamilyIds[0], 
-//           status: "active",
-//           isAdmin: false,
-//           primaryFamily: true,
-//           createDate: moment().format("YYYYMMDD"),
-//           modifyDate: moment().format("YYYYMMDD")
-//         }
-//     });
-//   });
-
-//   test("not found for no such familyId", async function () {
-//     const resp = await request(app)
-//         .patch(`/users/${testUserIds[0]}/families/0`)
-//         .send({
-//           "status":"inactive"
-//         });
-//     expect(resp.statusCode).toEqual(404);
-//   });
-
-//   test("bad request if not a member of family", async function () {
-//     const resp = await request(app)
-//         .patch(`/users/${testUserIds[0]}/families/${testFamilyIds[1]}`)        
-//         .send({
-//           "status":"inactive"
-//         });
-//     expect(resp.statusCode).toEqual(400);
-//   });
-// });

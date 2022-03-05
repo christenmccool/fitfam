@@ -97,6 +97,7 @@ function buildResultQuery(workoutId, userId, familyId) {
  **/
  function buildInsertQuery(data={}, jsToSql) {
   const fields = Object.keys(data);
+
   if (fields.length === 0) throw new BadRequestError("No data");
 
   let insertFields = " (";

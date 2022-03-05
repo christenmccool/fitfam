@@ -2,9 +2,14 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "http://example.com/root.json",
   "type": "object",
-  "minProperties": 1,
   "properties": {
-    "status": {
+    "userId": {
+      "type": "integer"
+    },
+    "familyId": {
+      "type": "integer"
+    },
+    "memStatus": {
       "type": "string",
       "enum": ["active", "pending", "blocked", "inactive"]
     },

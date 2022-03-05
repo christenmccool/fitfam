@@ -2,6 +2,7 @@ const db = require("../db.js");
 
 const testUserIds = [];
 const testFamilyIds = [];
+const testMembershipIds = [];
 const testWorkoutIds = [];
 const testResultIds = [];
 const testCommentIds = [];
@@ -9,6 +10,7 @@ const testCommentIds = [];
 async function commonBeforeAll() {
   await db.query("DELETE FROM users");
   await db.query("DELETE FROM families");
+  await db.query("DELETE FROM users_families");
   await db.query("DELETE FROM results");
   await db.query("DELETE FROM comments");
 
@@ -40,11 +42,13 @@ async function commonBeforeAll() {
 
   testFamilyIds.push(...familyResults.rows.map(ele => ele.id));
 
-  await db.query(
+  const membershipResults = await db.query(
     `INSERT INTO users_families (user_id, family_id)
-      VALUES ($1, $2)`,
-    [testUserIds[0], testFamilyIds[0]]
+      VALUES ($1, $2), ($1, $3), ($4, $2)`,
+    [testUserIds[0], testFamilyIds[0], testFamilyIds[1], testUserIds[1]]
   );
+
+  testMembershipIds.push(...membershipResults.rows.map(ele => ele.id));
 
   const workoutResults = await db.query(
     `INSERT INTO workouts (wo_name, wo_description)
@@ -98,6 +102,7 @@ module.exports = {
   commonAfterAll,
   testUserIds,
   testFamilyIds,
+  testMembershipIds,
   testWorkoutIds,
   testResultIds,
   testCommentIds

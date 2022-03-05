@@ -3,12 +3,14 @@
 const db = require("../db.js");
 const User = require("../models/user");
 const Family = require("../models/family");
+const Membership = require("../models/membership");
 const Workout = require("../models/workout");
 const Result = require("../models/result");
 const Comment = require("../models/comment");
 
 const testUserIds = [];
 const testFamilyIds = [];
+const testMembershipIds = [];
 const testWorkoutIds = [];
 const testResultIds = [];
 const testCommentIds = [];
@@ -60,7 +62,31 @@ async function commonBeforeAll() {
   testFamilyIds.push(family1.id);
   testFamilyIds.push(family2.id);
 
-  await user1.joinFamily(testFamilyIds[0]);
+  const membership1 = await Membership.create(
+    {
+      userId: testUserIds[0],
+      familyId: testFamilyIds[0]
+    }
+  );
+
+  const membership2 = await Membership.create(
+    {
+      userId: testUserIds[0],
+      familyId: testFamilyIds[1]
+    }
+  );
+
+
+  const membership3 = await Membership.create(
+    {
+      userId: testUserIds[1],
+      familyId: testFamilyIds[0]
+    }
+  );
+
+  testMembershipIds.push(membership1.id);
+  testMembershipIds.push(membership2.id);
+  testMembershipIds.push(membership3.id);
 
   const workout1 = await Workout.create(
     {
@@ -151,6 +177,7 @@ module.exports = {
   commonAfterAll,
   testUserIds,
   testFamilyIds,
+  testMembershipIds,
   testWorkoutIds,
   testResultIds,
   testCommentIds

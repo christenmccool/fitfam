@@ -1,6 +1,6 @@
 "use strict";
 
-/** Routes for users. */
+/** Routes for users */
 
 const express = require("express");
 
@@ -13,10 +13,11 @@ const User = require("../models/user");
 const userNewSchema = require("../schemas/userNew.json");
 const userSearchSchema = require("../schemas/userSearch.json");
 const userUpdateSchema = require("../schemas/userUpdate.json");
-const usersFamiliesUpdateSchema = require("../schemas/usersFamiliesUpdate.json");
+
 
 
 /** POST / { data }  => { user }
+ * Create new user given user data
  *
  * data must include { email, password, firstName, lastName }
  * data may include { userStatus, imageUrl, bio }
@@ -26,7 +27,7 @@ const usersFamiliesUpdateSchema = require("../schemas/usersFamiliesUpdate.json")
  * join a family with users/[id]/families route
  **/
 
- router.post("/", async function (req, res, next) {
+router.post("/", async function (req, res, next) {
   try {
     const validator = jsonschema.validate(req.body, userNewSchema);
     if (!validator.valid) {
@@ -56,7 +57,7 @@ const usersFamiliesUpdateSchema = require("../schemas/usersFamiliesUpdate.json")
  * user is { id, email, firstName, lastName, userStatus, bio }
  **/
 
- router.get("/", async function (req, res, next) {
+router.get("/", async function (req, res, next) {
   try {  
     const validator = jsonschema.validate(req.query, userSearchSchema);
     if (!validator.valid) {
@@ -81,7 +82,7 @@ const usersFamiliesUpdateSchema = require("../schemas/usersFamiliesUpdate.json")
  * families is [ family1, family2, ... ]
  *    where family is { familyId, familyname, status, isAdmin, primaryFamily, createDate, modifyDate }
  **/
- router.get("/:id", async function (req, res, next) {
+router.get("/:id", async function (req, res, next) {
   try {  
     const {id} = req.params;
 
@@ -100,10 +101,10 @@ const usersFamiliesUpdateSchema = require("../schemas/usersFamiliesUpdate.json")
  *   { password, firstName, lastName, userStatus, imageUrl, bio }
  * Must include at least one property
  *
- * Returns { id, email, firstName, lastName, userStatus, imageUrl, bio, createDate, modifyDate }
+ * user is { id, email, firstName, lastName, userStatus, imageUrl, bio, createDate, modifyDate }
  **/
 
- router.patch("/:id", async function (req, res, next) {
+router.patch("/:id", async function (req, res, next) {
   try {
     const validator = jsonschema.validate(req.body, userUpdateSchema);
     if (!validator.valid) {
@@ -125,7 +126,7 @@ const usersFamiliesUpdateSchema = require("../schemas/usersFamiliesUpdate.json")
 
 /** DELETE /[id]  =>  { deleted: id }
  **/
- router.delete("/:id", async function (req, res, next) {
+router.delete("/:id", async function (req, res, next) {
   try {
     const {id} = req.params;
     const user = await User.find(id);
@@ -137,87 +138,6 @@ const usersFamiliesUpdateSchema = require("../schemas/usersFamiliesUpdate.json")
   }
 });
 
-
-/** POST /[id]/families/[familyId] => { familyStatus }
- * 
- * familyStatus is {familyId, status, isAdmin, primaryFamily, createDate} 
- **/
- router.post("/:id/families/:familyId", async function (req, res, next) {
-  try {  
-    let {id, familyId} = req.params;
-    familyId = +familyId;
-    const user = await User.find(id);
-
-    const familyStatus = await user.joinFamily(familyId);
-
-    return res.json({ familyStatus });
-  } catch (err) {
-    return next(err);
-  }
-});
-
-
-/** GET /[id]/families => { families: [ family1, family2, ... ] }
- * Returns list of families given username
- * 
- * family is { familyId, familyname, status, isAdmin, primaryFamily, createDate, modifyDate }
- **/
- router.get("/:id/families", async function (req, res, next) {
-  try {  
-    const {id} = req.params;
-    const user = await User.find(id);
-
-    const families = await user.findFamilies();
-
-    return res.json({ families });
-  } catch (err) {
-    return next(err);
-  }
-});
-
-
-/** GET /[id]/families/[familyId] => { familyStatus }
- * 
- * familyStatus is {familyId, status, isAdmin, primaryFamily, createDate} 
- **/
- router.get("/:id/families/:familyId", async function (req, res, next) {
-  try {  
-    const {id, familyId} = req.params;
-    const user = await User.find(id);
-
-    const familyStatus = await user.findFamilyStatus(familyId);
-
-    return res.json({ familyStatus });
-  } catch (err) {
-    return next(err);
-  }
-});
-
-
-/** PATCH /[id]/families/[familyId] {data} => { updatedStatus }
- *  data may include { status, isAdmin, primaryFamily }
- * 
- * updatedStatus is { familyId, status, isAdmin, primaryFamily, createDate, modifyDate } 
- **/
- router.patch("/:id/families/:familyId", async function (req, res, next) {
-  try {  
-    const validator = jsonschema.validate(req.body, usersFamiliesUpdateSchema);
-    if (!validator.valid) {
-      const errs = validator.errors.map(e => e.stack);
-      throw new BadRequestError(errs);
-    }
-
-    let {id, familyId} = req.params;
-    familyId = +familyId;
-    const user = await User.find(id);
-
-    const updatedStatus = await user.updateFamilyStatus(familyId, req.body);
-
-    return res.json({ updatedStatus });
-  } catch (err) {
-    return next(err);
-  }
-});
 
 
 module.exports = router;
