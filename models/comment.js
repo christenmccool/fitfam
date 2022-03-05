@@ -1,4 +1,4 @@
-/** Comment class. */
+/** Comment class */
 
 const db = require("../db");
 const { NotFoundError } = require("../expressError");
@@ -15,11 +15,13 @@ class Comment {
     this.modifyDate = modifyDate;
   }
 
-  /** Create new comment
+  /** Create new comment given data, update db, return new comment data
+   * 
    * data must include { resultId, userId, content }
    *
    * Returns { id, resultId, userId, content, createDate }
    **/
+  // static async create({ resultId, userId, content }) {
   static async create({ resultId, userId, content }) {
     const res = await db.query(
       `INSERT INTO comments 
@@ -95,7 +97,7 @@ class Comment {
     }
     let {setClause, valuesArr} = buildUpdateQuery(data, jstoSql);
     setClause += `, modify_date=CURRENT_TIMESTAMP `;
-    console.log(setClause);
+
     const res = await db.query(
       `UPDATE comments 
         ${setClause}

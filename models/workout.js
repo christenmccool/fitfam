@@ -1,11 +1,11 @@
-/** Workout in Fitfam. */
+/** Workout class */
 
 const axios = require("axios");
 
 const db = require("../db");
 const { NotFoundError } = require("../expressError");
 
-const { buildWorkoutQuery, buildUpdateQuery } = require("../utils/sql");
+const { buildWorkoutQuery, buildInsertQuery, buildUpdateQuery } = require("../utils/sql");
 
 const API_KEY = require("../secret");
 const SUGARWOD_BASE_URL = "https://api.sugarwod.com/v2";
@@ -25,7 +25,7 @@ class Workout {
     this.publishDate = publishDate;
   }
 
-  /** Create new workout
+  /** Create new workout given data, update db, return new workout data
    *    
    * Data may include:
    *   { swId, name, description, category, scoreType, publishDate }
@@ -33,11 +33,21 @@ class Workout {
    *
    * Returns { id, swId, name, description, category, scoreType, createDate, publishDate }
    **/
-  static async create({ swId, name, description, category, scoreType, publishDate }) {
+  static async create(data) {
+    const jstoSql = {
+      swId: "sw_id",
+      name: "wo_name",
+      description: "wo_description",
+      category: "category",
+      scoreType: "score_type",
+      publishDate: "publish_date"
+    }
+
+    let {insertClause, valuesArr} = buildInsertQuery(data, jstoSql);
+
     const res = await db.query(
-      `INSERT INTO workouts
-        (sw_id, wo_name, wo_description, category, score_type, publish_date)
-        VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO workouts 
+        ${insertClause}
         RETURNING id,
                   sw_id AS swId, 
                   wo_name AS name,
@@ -45,8 +55,8 @@ class Workout {
                   score_type AS "scoreType",
                   category,
                   TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
-                  TO_CHAR(publish_date, 'YYYYMMDD') AS "publishDate"`,
-      [swId, name, description, category, scoreType, publishDate]
+                  TO_CHAR(publish_date, 'YYYYMMDD') AS "publishDate"`,           
+      [...valuesArr]
     );
 
     const workout = res.rows[0];

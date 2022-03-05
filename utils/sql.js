@@ -47,44 +47,6 @@ function buildWorkoutQuery(date, category, movementIds=[]) {
   }
 }
 
-
-//Helper function to build a database query filtering results by workoutId and/or userId/familyId
-function buildResultQuery(workoutId, userId, familyId) {
-  let data = [];
-  let whereCond = '';
-  let count = 1;
-  if (workoutId) {
-    whereCond += ` WHERE workout_id=$${count}`;
-    count++;
-    data.push(workoutId);
-  }
-  if (userId) {
-    whereCond = count === 1 ? whereCond + ` WHERE user_id=$${count}` : whereCond + ` AND user_id=$${count}`;
-    count++;
-    data.push(userId);
-  }
-  if (familyId) {
-    whereCond = count === 1 ? whereCond + ` WHERE family_id=$${count}` : whereCond + ` AND family_id=$${count}`;
-    count++;
-    data.push(familyId);
-  }
-
-  let query = `SELECT id,
-                      user_id AS "userId",
-                      family_id AS "familyId",
-                      workout_id AS "workoutId", 
-                      score, 
-                      notes,
-                      TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
-                      TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate",
-                      TO_CHAR(complete_date, 'YYYYMMDD') AS "completeDate"
-        FROM results
-        ${whereCond}`;
-
-  return {query, data};
-}
-
-
 /** { data, jsToSql } => { insertClause, valuesArr }
  * Helper function to build part of an INSERT query
  * Returns part of the INSERT clause and a values array
@@ -182,5 +144,5 @@ function buildUpdateQuery(data={}, jsToSql) {
 
 
 
-module.exports = { buildWorkoutQuery, buildResultQuery, buildSelectQuery, buildInsertQuery, buildUpdateQuery };
+module.exports = { buildWorkoutQuery, buildSelectQuery, buildInsertQuery, buildUpdateQuery };
 

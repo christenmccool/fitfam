@@ -1,4 +1,5 @@
 /** Membership class for users and families */
+
 const db = require("../db");
 const { BadRequestError, NotFoundError } = require("../expressError");
 

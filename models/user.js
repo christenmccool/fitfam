@@ -1,4 +1,5 @@
 /** User class */
+
 const db = require("../db");
 const { BadRequestError, NotFoundError } = require("../expressError");
 
@@ -19,7 +20,7 @@ class User {
     this.families = families;
   }
 
-  /** Create new user given user data
+  /** Create new user given data, update db, return new user data
    * 
    * data must include { email, password, firstName, lastName }
    * data may include { userStatus, imageUrl, bio }

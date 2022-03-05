@@ -48,9 +48,7 @@ const resultUpdateSchema = require("../schemas/resultUpdate.json");
  **/
  router.get("/", async function (req, res, next) {
   try {  
-    const {workoutId, userId, familyId} = req.query;
-
-    const results = await Result.findAll(workoutId, userId, familyId);
+    const results = await Result.findAll(req.query);
 
     return res.json({ results });
   } catch (err) {

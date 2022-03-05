@@ -1,9 +1,9 @@
-/** Result class. */
+/** Result class */
 
 const db = require("../db");
 const { NotFoundError } = require("../expressError");
 
-const { buildResultQuery, buildUpdateQuery } = require("../utils/sql");
+const { buildInsertQuery, buildSelectQuery, buildUpdateQuery } = require("../utils/sql");
 
 class Result {
   constructor({ id, userId, familyId, workoutId, score, notes, createDate, modifyDate, completeDate }) {
@@ -18,17 +18,29 @@ class Result {
     this.completeDate = completeDate;
   }
 
-  /** Create new result
+  /** Create new result given data, update db, return new result data
+   * 
    * data must include { userId, familyId, workoutId }
    * data may include { score, notes, completeDate }
    *
    * Returns { id, username, familyId, workoutId, score, notes, createDate, completeDate }
    **/
-  static async create({ userId, familyId, workoutId, score, notes, completeDate }) {
+  // static async create({ userId, familyId, workoutId, score, notes, completeDate }) {
+  static async create(data) {
+    const jstoSql = {
+      userId: "user_id",
+      familyId: "family_id",
+      workoutId: "workout_id",
+      score: "score",
+      notes: "notes",
+      completeDate: "complete_date"
+    }
+
+    let {insertClause, valuesArr} = buildInsertQuery(data, jstoSql);
+
     const res = await db.query(
       `INSERT INTO results 
-        (user_id, family_id, workout_id, score, notes, complete_date)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        ${insertClause}
         RETURNING id,
                   user_id AS "userId",
                   family_id AS "familyId",
@@ -36,9 +48,8 @@ class Result {
                   score, 
                   notes,
                   TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
-                  TO_CHAR(complete_date, 'YYYYMMDD') AS "completeDate"`,
-
-      [userId, familyId, workoutId, score, notes, completeDate]
+                  TO_CHAR(complete_date, 'YYYYMMDD') AS "completeDate"`,        
+      [...valuesArr]
     );
 
     const result = res.rows[0];
@@ -46,13 +57,43 @@ class Result {
     return new Result(result);  
   }
   
-  /** Find all results given a workoutId and/or userId and/or familyId 
+  /** Find all results matching optional filtering criteria
+   * Filters are workoutId, userId, familyId
    *
-   * Returns [{ id, userId, familyId, workoutId, score, notes, createDate, modifyDate, completeDate }, ...]
+   * Returns [ resutl1, result2, ... ]
+   * where result is { id, userId, familyId, workoutId, score, notes, createDate, modifyDate, completeDate }
    * */
-  static async findAll(workoutId, userId, familyId) {
-    const {query, data} = buildResultQuery(workoutId, userId, familyId);
-    const res = await db.query(query, data);
+  static async findAll(data) {
+    const jstoSql = {
+      userId: "user_id",
+      familyId: "family_id",
+      workoutId: "workout_id"
+    }
+
+    const compOp = {
+      userId: "=",
+      familyId: "=",
+      workoutId: "="
+    }
+
+    let {whereClause, valuesArr} = buildSelectQuery(data, jstoSql, compOp);
+
+    let res = await db.query(
+      `SELECT id,
+              user_id AS "userId",
+              family_id AS "familyId",
+              workout_id AS "workoutId", 
+              score, 
+              notes,
+              TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
+              TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate",
+              TO_CHAR(complete_date, 'YYYYMMDD') AS "completeDate"
+        FROM results
+        ${whereClause}
+        ORDER BY id`,
+        [...valuesArr]
+    );
+
     return res.rows.map(ele => new Result(ele));
   }
   
