@@ -11,6 +11,7 @@ const { BadRequestError } = require("../expressError");
 
 const Family = require("../models/family");
 const familyNewSchema = require("../schemas/familyNew.json");
+const familySearchSchema = require("../schemas/familySearch.json");
 const familyUpdateSchema = require("../schemas/familyUpdate.json");
 
 
@@ -19,7 +20,7 @@ const familyUpdateSchema = require("../schemas/familyUpdate.json");
  * data must include { familyName }
  * data may include { imageUrl, bio }
  * 
- * family is { id, familyname, imageUrl, bio, createDate }
+ * family is { id, familyname, imageUrl, bio, createDate, modifyDate }
  **/
  router.post("/", async function (req, res, next) {
   try {
@@ -38,13 +39,23 @@ const familyUpdateSchema = require("../schemas/familyUpdate.json");
 
 
 /** GET / => { families: [ { family1, family2, ... } ] }
- * Returns a list of families
+ * Returns a list of all families matching optional filtering criteria
+ * 
+ * Search filters:
+ * - familyName
+ * - bio (keyword match)
  * 
  * family is { id, familyName, image_url, bio, createDate, modifyDate }
  **/
  router.get("/", async function (req, res, next) {
   try {  
-    const families = await Family.findAll();
+    const validator = jsonschema.validate(req.query, familySearchSchema);
+    if (!validator.valid) {
+      const errs = validator.errors.map(e => e.stack);
+      throw new BadRequestError(errs);
+    }
+
+    const families = await Family.findAll(req.query);
 
     return res.json({ families });
   } catch (err) {
@@ -58,7 +69,8 @@ const familyUpdateSchema = require("../schemas/familyUpdate.json");
  * 
  * family is id, familyName, imageUrl, bio, createDate, modifyDate, users }
  * 
- * users is [ userId1, userId2, ... } ]
+ * users is [ user1, user2, ... } ]
+ *    where user is { userId, firstName, lastName }
  **/
  router.get("/:id", async function (req, res, next) {
   try {  

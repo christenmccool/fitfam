@@ -26,7 +26,6 @@ const userUpdateSchema = require("../schemas/userUpdate.json");
  * families is initialized as an empty array
  * join a family with users/[id]/families route
  **/
-
 router.post("/", async function (req, res, next) {
   try {
     const validator = jsonschema.validate(req.body, userNewSchema);
@@ -56,7 +55,6 @@ router.post("/", async function (req, res, next) {
  * 
  * user is { id, email, firstName, lastName, userStatus, bio }
  **/
-
 router.get("/", async function (req, res, next) {
   try {  
     const validator = jsonschema.validate(req.query, userSearchSchema);
@@ -103,7 +101,6 @@ router.get("/:id", async function (req, res, next) {
  *
  * user is { id, email, firstName, lastName, userStatus, imageUrl, bio, createDate, modifyDate }
  **/
-
 router.patch("/:id", async function (req, res, next) {
   try {
     const validator = jsonschema.validate(req.body, userUpdateSchema);
