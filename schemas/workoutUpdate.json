@@ -19,6 +19,11 @@
       "minLength": 1,
       "maxLength": 500
     },
+    "category": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 10
+    },
     "scoreType": {
       "type": "string",
       "minLength": 1,

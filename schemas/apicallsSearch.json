@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "http://example.com/root.json",
+  "type": "object",
+  "properties": {
+    "publishDate": {
+      "type": "string",
+      "maxLength": 50,
+      "format": "date"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,9 +1,8 @@
 "use strict";
 
-/** Routes for workouts. */
+/** Routes for workouts */
 
 const express = require("express");
-const moment = require("moment");
 
 const jsonschema = require("jsonschema");
 const router = express.Router();
@@ -11,7 +10,9 @@ const router = express.Router();
 const { BadRequestError } = require("../expressError");
 
 const Workout = require("../models/workout");
+
 const workoutNewSchema = require("../schemas/workoutNew.json");
+const workoutSearchSchema = require("../schemas/workoutSearch.json");
 const workoutUpdateSchema = require("../schemas/workoutUpdate.json");
 
 
@@ -44,22 +45,31 @@ const workoutUpdateSchema = require("../schemas/workoutUpdate.json");
  * Returns a list of workouts 
  * 
  * Search filters:
- * - date (format 'YYYYMMDD')
- * - category ("girls", "heroes", "games")
- * - movementIds
+ * - swId (API id)
+ * - name
+ * - description (key word)
+ * - category ("girls", "heroes", "games", "wod", "custom")
+ * - scoreType
+ * - publishDate
+ * - movementId
  * 
- * Default with no filter is today's date
+ * workout is { id, swId, name, description, category, scoreType, createDate, modifyDate, publishDate }
  **/
+
 router.get("/", async function (req, res, next) {
   try {  
-    let {date, category} = req.query;
-    const movementIds = req.query.movementIds ? [].concat(req.query.movementIds) : [];
-
-    if (!date && !category && !movementIds.length) {
-      date = moment().format("YYYYMMDD");
+    const query = req.query;
+    if (query.movementId && !Array.isArray(query.movementId)) {
+      query.movementId = [query.movementId];
     }
 
-    const workouts = await Workout.findAll(date, category, movementIds);
+    const validator = jsonschema.validate(query, workoutSearchSchema);
+    if (!validator.valid) {
+      const errs = validator.errors.map(e => e.stack);
+      throw new BadRequestError(errs);
+    }
+
+    const workouts = await Workout.findAll(query);
 
     return res.json({ workouts });
   } catch (err) {

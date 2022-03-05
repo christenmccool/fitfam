@@ -1,14 +1,10 @@
 /** Workout class */
 
-const axios = require("axios");
-
 const db = require("../db");
 const { NotFoundError } = require("../expressError");
 
-const { buildWorkoutQuery, buildInsertQuery, buildUpdateQuery } = require("../utils/sql");
+const { buildInsertQuery, buildSelectQuery, buildUpdateQuery } = require("../utils/sql");
 
-const API_KEY = require("../secret");
-const SUGARWOD_BASE_URL = "https://api.sugarwod.com/v2";
 
 /** Workout in the database. */
 
@@ -64,55 +60,62 @@ class Workout {
     return new Workout(workout);
   }
 
-  /** Find all workouts matching filtering criteria
-   * Filters are date OR category and/or movementIds
-   * 
-   * Returns [ {id1, name1}, {id2, name2}, ... } ]
-   **/
-  static async findAll(date, category, movementIds) {
-    let workoutList = [];
+  /** Find all workouts matching optional filtering criteria
+   * Filters are swId, name, description, category, movementIds, publishDate, movementId 
+   *
+   * Returns [ workout1, workout1, ... ]
+   * where workout is { id, swId, name, description, category, scoreType, createDate, publishDate }
+   * */
+  static async findAll(data) {
+    let dataWithoutMovementId = {...data};
+    delete dataWithoutMovementId.movementId;
 
-    //Return all workouts in database if no filtering criteria are given
-    if (!date && !category && !movementIds.length) {
-      const {query} = buildWorkoutQuery();
-      const res = await db.query(query);
-      workoutList = res.rows;
+    const jstoSql = {
+      swId: "sw_id",
+      name: "wo_name",
+      description: "wo_description",
+      category: "category",
+      scoreType: "score_type",
+      publishDate: "publish_date"
     }
-
-    //If a date is given, filter by date only
-    if (date) {
-      const {query, data} = buildWorkoutQuery(date);
-      const res = await db.query(query, data);
-      if (res.rows.length) {
-        workoutList = res.rows;
   
-      //If no workout for the date is stored in the database, call the SugarWOD API
-      } else {
-        let resp = await axios.get(`${SUGARWOD_BASE_URL}/workouts`, 
-          {params: {dates: date}, headers: {Authorization: API_KEY}}
-        );
-        //Store the workouts returned from the API in the database 
-        for (let wo of resp.data.data) {
-          const res = await db.query(
-            `INSERT INTO workouts (sw_id, wo_name, wo_description, category, score_type, publish_date)
-              VALUES ($1, $2, $3, $4, $5, $6)
-              RETURNING id, wo_name AS name`,
-            [wo.id, wo.attributes.title, wo.attributes.description, "wod", wo.attributes.score_type, wo.attributes.scheduled_date_int]
-          );
-          workoutList.push(res.rows[0]);
-        }
-      }  
-
-    //If no date is given, filter by category and/or movementIds
-    } else {
-      const {query, data} = buildWorkoutQuery(null, category, movementIds);
-      const res = await db.query(query, data);
-      workoutList = res.rows;
+    const compOp = {
+      swId: "ILIKE",
+      name: "ILIKE",
+      description: "ILIKE",
+      category: "ILIKE",
+      scoreType: "ILIKE",
+      publishDate: "date"
     }
 
-    return workoutList;
-  }
+    let {whereClause, valuesArr} = buildSelectQuery(dataWithoutMovementId, jstoSql, compOp);
 
+    //add intersect to workouts_movements table clause if movementId array supplied
+    let intersectClauses = "";
+    if (data.movementId && data.movementId.length) {
+      for (let i=0; i < data.movementId.length; i++) {
+        intersectClauses += ` INTERSECT SELECT w.id, wo_name AS name
+                                FROM workouts w 
+                                JOIN workouts_movements wm ON w.id = wm.wo_id 
+                                JOIN movements m ON m.id = wm.movement_id 
+                                WHERE m.id = $${valuesArr.length + i + 1}`;
+        valuesArr.push(data.movementId[i]);
+      }  
+    }
+
+    let res = await db.query(
+      `SELECT id,
+              wo_name AS name
+        FROM workouts
+        ${whereClause}
+        ${intersectClauses}
+        ORDER BY name`,
+        [...valuesArr]
+    );
+
+    return res.rows.map(ele => new Workout(ele));
+  }
+    
 
   /** Given a workout id, return details about workout.
    *

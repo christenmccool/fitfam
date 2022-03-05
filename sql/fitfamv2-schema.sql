@@ -43,7 +43,7 @@ CREATE TABLE workouts (
   sw_id text,
   wo_name text,
   wo_description text,
-  category text,
+  category text DEFAULT 'custom',
   score_type text,
   create_date timestamptz DEFAULT CURRENT_TIMESTAMP,
   modify_date timestamptz, 

@@ -1,51 +1,5 @@
 const { BadRequestError } = require("../expressError");
 
-//Helper function to build a database query filtering workouts by date OR category and movementIds
-function buildWorkoutQuery(date, category, movementIds=[]) {
-  let query = ``;
-  let data = [];
-
-  if (!date && !category && !movementIds.length) {
-    query = `SELECT id, 
-                    wo_name AS name 
-             FROM workouts
-             ORDER BY name`
-    return {query, data};
-  }
-
-  if (date || !movementIds.length) {
-    let param = date ? "publish_date" : "category";
-    data = date ? [date] : [category];
-
-    query = `SELECT id, 
-                    wo_name AS name 
-             FROM workouts
-             WHERE ${param} = $1
-             ORDER BY name`
-    return {query, data};
-
-  } else {
-    data = category ? [category, ...movementIds] : movementIds;
-    let count = category ? 2 : 1;
-
-    for (let id of movementIds) {
-      if ((!category && count > 1) || (category && count > 2)) {
-        query += ` INTERSECT `;
-      }
-      query += `SELECT w.id, 
-                       wo_name AS name
-                FROM workouts w 
-                JOIN workouts_movements wm ON w.id = wm.wo_id 
-                JOIN movements m ON m.id = wm.movement_id 
-                WHERE m.id = $${count}`;
-      if (category) query += ` AND w.category = $1`;
-      count++;
-    }
-  
-    query += ` ORDER BY name`;
-    return {query, data};
-  }
-}
 
 /** { data, jsToSql } => { insertClause, valuesArr }
  * Helper function to build part of an INSERT query
@@ -87,7 +41,9 @@ function buildWorkoutQuery(date, category, movementIds=[]) {
  * data is {field1: val1, field2: val2, ...}
  * jsToSql is {jsName1: sql_name1, jsName2: sql_name2, ...}
  * compOp is {jsName1: comparisonOperator1, jsName2: comparisonOperator2, ...}
+ * 
  * if the comparison operator is "ILIKE", allow a partial match of value by prepending and appending % to the value
+ * if the comparison operator is "date", convert the value to a date with "::date ="
  * 
  * whereClause is for example ` WHERE field1=$1 AND field2 ILIKE %$2% ... `
  * valuesArr is [val1, val2, ...]
@@ -102,10 +58,19 @@ function buildWorkoutQuery(date, category, movementIds=[]) {
     const sqlName = jsToSql[fields[i]];
     const op = compOp[fields[i]];
 
-    whereClause += op === "ILIKE" ? ` ${sqlName} ILIKE $${i+1} AND` :` ${sqlName}${op}$${i+1} AND`;
-
-    const val = op === "ILIKE" ? `%${data[fields[i]]}%` : data[fields[i]];
-    valuesArr.push(val);
+    if (Array.isArray(data[fields[i]])) {
+      console.log(data[fields[i]]);
+    }
+    if (op === "ILIKE") {
+      whereClause += ` ${sqlName} ILIKE $${i+1} AND`;
+      valuesArr.push(`%${data[fields[i]]}%`);
+    } else if (op === "date") {
+      whereClause += ` ${sqlName}::date = $${i+1} AND`;
+      valuesArr.push(data[fields[i]]);
+    } else {
+      whereClause += ` ${sqlName}${op}$${i+1} AND`;
+      valuesArr.push(data[fields[i]]);
+    }
   }
   whereClause = whereClause.slice(0, -4);
   whereClause += " ";
@@ -141,8 +106,5 @@ function buildUpdateQuery(data={}, jsToSql) {
 }
   
 
-
-
-
-module.exports = { buildWorkoutQuery, buildSelectQuery, buildInsertQuery, buildUpdateQuery };
+module.exports = { buildSelectQuery, buildInsertQuery, buildUpdateQuery };
 
