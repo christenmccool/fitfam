@@ -11,6 +11,7 @@ const { BadRequestError } = require("../expressError");
 
 const Result = require("../models/result");
 const resultNewSchema = require("../schemas/resultNew.json");
+const resultSearchSchema = require("../schemas/resultSearch.json");
 const resultUpdateSchema = require("../schemas/resultUpdate.json");
 
 /** POST / { data }  => { result }
@@ -43,12 +44,26 @@ const resultUpdateSchema = require("../schemas/resultUpdate.json");
  * - workoutId
  * - userId
  * - familyId
+ * - score
+ * - notes
  * 
- * result is { id, userId, familyId, workoutId, score, notes, createDate, modifyDate, completeDate }
+ * result is { id, userId, familyId, workoutId, score, notes, completeDate }
  **/
  router.get("/", async function (req, res, next) {
   try {  
-    const results = await Result.findAll(req.query);
+    const query = req.query;
+    if (query.userId !== undefined) query.userId = +query.userId;
+    if (query.familyId !== undefined) query.familyId = +query.familyId;
+    if (query.workoutId !== undefined) query.workoutId = +query.workoutId;
+    if (query.score !== undefined) query.score = +query.score;
+
+    const validator = jsonschema.validate(query, resultSearchSchema);
+    if (!validator.valid) {
+      const errs = validator.errors.map(e => e.stack);
+      throw new BadRequestError(errs);
+    }
+
+    const results = await Result.findAll(query);
 
     return res.json({ results });
   } catch (err) {
@@ -78,7 +93,7 @@ const resultUpdateSchema = require("../schemas/resultUpdate.json");
 /** PATCH /[id] { data } => { result }
  *
  * Data may include:
- *   { score, notes, date, completeDate }
+ *   { score, notes, completeDate }
  *
  * Returns { id, userId, familyId, workoutId, score, notes, createDate, modifyDate, completeDate }
  **/

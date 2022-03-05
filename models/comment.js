@@ -3,7 +3,7 @@
 const db = require("../db");
 const { NotFoundError } = require("../expressError");
 
-const { buildUpdateQuery } = require("../utils/sql");
+const { buildSelectQuery, buildUpdateQuery } = require("../utils/sql");
 
 class Comment {
   constructor({ id, resultId, userId, content, createDate, modifyDate }) {
@@ -40,20 +40,40 @@ class Comment {
     return new Comment(comment);
   }
   
-  /** Find all comments 
+
+  /** Find all comments matching optional filtering criteria
+   * Filters are resultId, userId, content
    *
-   * Returns [{ id, resultId, userId, content, createDate, modifyDate }, ...]
+   * Returns [ comment1, comment2, ... ]
+   * where result is { id, resultId, userId, content, createDate, modifyDate }
    * */
-   static async findAll() {
-    const res = await db.query(
-      `SELECT id, 
-              result_id AS "resultId", 
-              user_id AS "userId",
-              content, 
-              TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
-              TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate"
-       FROM comments`
-    );
+   static async findAll(data) {
+    const jstoSql = {
+      resultId: "result_id",
+      userId: "user_id",
+      content: "content"
+    }
+
+  const compOp = {
+    resultId: "=",
+    userId: "=",
+    content: "ILIKE"
+  }
+
+  let {whereClause, valuesArr} = buildSelectQuery(data, jstoSql, compOp);
+
+  let res = await db.query(
+    `SELECT id, 
+            result_id AS "resultId", 
+            user_id AS "userId",
+            content, 
+            TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
+            TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate"
+      FROM comments
+      ${whereClause}
+      ORDER BY id`,
+      [...valuesArr]
+  );
     
     return res.rows.map(ele => new Comment(ele));
   }

@@ -58,22 +58,26 @@ class Result {
   }
   
   /** Find all results matching optional filtering criteria
-   * Filters are workoutId, userId, familyId
+   * Filters are workoutId, userId, familyId, score, notes
    *
    * Returns [ resutl1, result2, ... ]
-   * where result is { id, userId, familyId, workoutId, score, notes, createDate, modifyDate, completeDate }
+   * where result is { id, userId, familyId, workoutId, score, notes, completeDate }
    * */
   static async findAll(data) {
     const jstoSql = {
       userId: "user_id",
       familyId: "family_id",
-      workoutId: "workout_id"
+      workoutId: "workout_id",
+      score: "score",
+      notes: "notes"
     }
 
     const compOp = {
       userId: "=",
       familyId: "=",
-      workoutId: "="
+      workoutId: "=",
+      score: "=",
+      notes: "ILIKE"
     }
 
     let {whereClause, valuesArr} = buildSelectQuery(data, jstoSql, compOp);
@@ -85,8 +89,6 @@ class Result {
               workout_id AS "workoutId", 
               score, 
               notes,
-              TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
-              TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate",
               TO_CHAR(complete_date, 'YYYYMMDD') AS "completeDate"
         FROM results
         ${whereClause}
@@ -140,6 +142,7 @@ class Result {
       notes: "notes",
       completeDate: "complete_date"
     }
+    
     let {setClause, valuesArr} = buildUpdateQuery(data, jstoSql);
     setClause += `, modify_date=CURRENT_TIMESTAMP `;
 

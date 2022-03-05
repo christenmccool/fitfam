@@ -10,6 +10,7 @@ const { BadRequestError } = require("../expressError");
 
 const Comment = require("../models/comment");
 const commentNewSchema = require("../schemas/commentNew.json");
+const commentSearchSchema = require("../schemas/commentSearch.json");
 const commentUpdateSchema = require("../schemas/commentUpdate.json");
 
 
@@ -35,14 +36,30 @@ const commentUpdateSchema = require("../schemas/commentUpdate.json");
 });
 
 
+
 /** GET / => { comments: [ { comment1, comment2, ... } ] }
- * Returns a list of results
+ * Returns a list of comments
+ * 
+ * Search filters:
+ * - resultId
+ * - userId
+ * - content
  * 
  * comment is { id, resultId, userId, content, createDate, modifyDate }
  **/
  router.get("/", async function (req, res, next) {
   try {  
-    const comments = await Comment.findAll();
+    const query = req.query;
+    if (query.resultId !== undefined) query.resultId = +query.resultId;
+    if (query.userId !== undefined) query.userId = +query.userId;
+
+    const validator = jsonschema.validate(query, commentSearchSchema);
+    if (!validator.valid) {
+      const errs = validator.errors.map(e => e.stack);
+      throw new BadRequestError(errs);
+    }
+
+    const comments = await Comment.findAll(query);
 
     return res.json({ comments });
   } catch (err) {
@@ -79,7 +96,6 @@ const commentUpdateSchema = require("../schemas/commentUpdate.json");
 
  router.patch("/:id", async function (req, res, next) {
   try {
-    console.log(req.body)
     const validator = jsonschema.validate(req.body, commentUpdateSchema);
     if (!validator.valid) {
       const errs = validator.errors.map(e => e.stack);

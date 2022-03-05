@@ -21,7 +21,7 @@ class Family {
    * data must include { familyName }
    * data may include { imageUrl, bio }
    * 
-   * Returns { id, familyName, imageUrl, bio, createDate, modifyDate }
+   * Returns { id, familyName, imageUrl, bio, createDate }
    **/
   static async create(data) {
     const jstoSql = {
@@ -39,8 +39,7 @@ class Family {
                   family_name AS "familyName", 
                   image_url AS "imageUrl", 
                   bio,                   
-                  TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
-                  TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate"`,           
+                  TO_CHAR(create_date, 'YYYYMMDD') AS "createDate"`,           
       [...valuesArr]
     );
 
@@ -51,10 +50,10 @@ class Family {
   
 
   /** Find all families matching optional filtering criteria
-   * Filters are partial match of familyName and bio
+   * Filters are familyName and bio
    *
    * Returns [ family1, family2, ... ]
-   * where family is { id, familyName, imageUrl, bio, createDate, modifyDate }
+   * where family is { id, familyName, imageUrl, bio }
    **/
   static async findAll(data) {
     const jstoSql = {
@@ -73,9 +72,7 @@ class Family {
       `SELECT id, 
               family_name AS "familyName", 
               image_url AS "imageUrl", 
-              bio, 
-              TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
-              TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate"
+              bio 
         FROM families
         ${whereClause}
         ORDER BY id`,

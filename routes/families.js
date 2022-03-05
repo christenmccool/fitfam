@@ -20,7 +20,7 @@ const familyUpdateSchema = require("../schemas/familyUpdate.json");
  * data must include { familyName }
  * data may include { imageUrl, bio }
  * 
- * family is { id, familyname, imageUrl, bio, createDate, modifyDate }
+ * family is { id, familyname, imageUrl, bio, createDate }
  **/
  router.post("/", async function (req, res, next) {
   try {
@@ -45,7 +45,7 @@ const familyUpdateSchema = require("../schemas/familyUpdate.json");
  * - familyName
  * - bio (keyword match)
  * 
- * family is { id, familyName, image_url, bio, createDate, modifyDate }
+ * family is { id, familyName, image_url, bio }
  **/
  router.get("/", async function (req, res, next) {
   try {  
