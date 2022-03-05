@@ -38,8 +38,7 @@ describe("create", function () {
       memStatus: "active",
       isAdmin: false,
       primaryFamily: false,
-      createDate: moment().format("YYYYMMDD"),
-      modifyDate: null
+      createDate: moment().format("YYYYMMDD")
     });
 
     const found = await db.query(
@@ -72,8 +71,7 @@ describe("create", function () {
 
     expect(membership).toEqual({
       ...newMembership,
-      createDate: moment().format("YYYYMMDD"),
-      modifyDate: null
+      createDate: moment().format("YYYYMMDD")
     });
 
     const found = await db.query(

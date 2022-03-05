@@ -42,9 +42,7 @@ describe("POST /users", function () {
         userStatus: "active",
         imageUrl: null,
         bio: null,
-        createDate: moment().format("YYYYMMDD"),
-        modifyDate: null,
-        families: []
+        createDate: moment().format("YYYYMMDD")
       }
     });
   });
@@ -69,9 +67,7 @@ describe("POST /users", function () {
         ...data,
         userStatus: "active",
         imageUrl: null,
-        createDate: moment().format("YYYYMMDD"),
-        modifyDate: null,
-        families: []
+        createDate: moment().format("YYYYMMDD")
       }
     });
   });
@@ -319,23 +315,7 @@ describe("PATCH /users/:id", () => {
         createDate: moment().format("YYYYMMDD"),
         modifyDate: moment().format("YYYYMMDD"),
         imageUrl: null,
-        bio: null,
-        families: [
-          { 
-            familyId: testFamilyIds[0],
-            familyName: "fam1",
-            memStatus: "active",
-            isAdmin: false,
-            primaryFamily: false 
-          },
-          { 
-            familyId: testFamilyIds[1],
-            familyName: "fam2",
-            memStatus: "active",
-            isAdmin: false,
-            primaryFamily: false 
-          }
-        ]
+        bio: null
       }
     });
   });

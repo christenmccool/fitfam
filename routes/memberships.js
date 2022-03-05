@@ -20,7 +20,7 @@ const membershipUpdateSchema = require("../schemas/membershipUpdate.json");
 * data must include { userId, familyId }
 * data may include { memStatus, isAdmin, primaryFamily }
 * 
-* membership is { userId, familyId, memStatus, isAdmin, primaryFamily, createDate, modifyDate }
+* membership is { userId, familyId, memStatus, isAdmin, primaryFamily, createDate }
 **/
 
 router.post("/", async function (req, res, next) {

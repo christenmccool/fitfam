@@ -39,8 +39,7 @@ describe("POST /memberships", function () {
         memStatus: "active",
         isAdmin: false,
         primaryFamily: false,
-        createDate: moment().format("YYYYMMDD"),
-        modifyDate: null
+        createDate: moment().format("YYYYMMDD")
       }
     });
   });
@@ -61,8 +60,7 @@ describe("POST /memberships", function () {
     expect(resp.body).toEqual({
       membership: {
         ...data,
-        createDate: moment().format("YYYYMMDD"),
-        modifyDate: null
+        createDate: moment().format("YYYYMMDD")
       }
     });
   });

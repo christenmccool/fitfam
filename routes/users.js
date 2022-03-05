@@ -15,16 +15,13 @@ const userSearchSchema = require("../schemas/userSearch.json");
 const userUpdateSchema = require("../schemas/userUpdate.json");
 
 
-
 /** POST / { data }  => { user }
  * Create new user given user data
  *
  * data must include { email, password, firstName, lastName }
  * data may include { userStatus, imageUrl, bio }
  * 
- * user is { id, email, firstName, lastName, userStatus, imageUrl, bio, createDate, modifyDate, families }
- * families is initialized as an empty array
- * join a family with users/[id]/families route
+ * user is { id, email, firstName, lastName, userStatus, imageUrl, bio, createDate }
  **/
 router.post("/", async function (req, res, next) {
   try {

@@ -6,7 +6,7 @@ const { BadRequestError, NotFoundError } = require("../expressError");
 const { buildInsertQuery, buildSelectQuery, buildUpdateQuery } = require("../utils/sql");
 
 class User {
-  constructor({ id, email, password, firstName, lastName, userStatus, imageUrl, bio, createDate, modifyDate, families=[] }) {
+  constructor({ id, email, password, firstName, lastName, userStatus, imageUrl, bio, createDate, modifyDate, families }) {
     this.id = id;
     this.email = email;
     this.password = password;
@@ -25,8 +25,7 @@ class User {
    * data must include { email, password, firstName, lastName }
    * data may include { userStatus, imageUrl, bio }
    *
-   * Returns { id, email, firstName, lastName, userStatus, imageUrl, bio, createDate, modifyDate, families }
-   * where families is an empty array 
+   * Returns { id, email, firstName, lastName, userStatus, imageUrl, bio, createDate, modifyDate }
    *
    * Throws BadRequestError on duplicates
    **/
@@ -63,8 +62,7 @@ class User {
                   user_status AS "userStatus",
                   image_url AS "imageUrl",
                   bio,
-                  TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
-                  TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate"`,             
+                  TO_CHAR(create_date, 'YYYYMMDD') AS "createDate"`,             
       [...valuesArr]
     );
 
@@ -202,22 +200,7 @@ class User {
 
     if (!user) throw new NotFoundError(`No user: ${this.username}`);
 
-    const famRes = await db.query(
-      `SELECT uf.family_id AS "familyId",
-              f.family_name AS "familyName",
-              uf.mem_status AS "memStatus",
-              uf.is_admin AS "isAdmin",
-              uf.primary_family AS "primaryFamily"
-        FROM users_families uf
-        JOIN families f
-        ON uf.family_id = f.id
-        WHERE uf.user_id=$1`,
-      [this.id]
-    );
-        
-    let families = famRes.rows;
-
-    return new User( {...user, families} );
+    return new User(user);
   }
 
   /** Delete user 

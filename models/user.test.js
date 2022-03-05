@@ -44,9 +44,7 @@ describe("create", function () {
       userStatus: "active",
       createDate: moment().format("YYYYMMDD"),
       imageUrl: null,
-      bio: null,
-      modifyDate: null, 
-      families: []
+      bio: null
     });
 
     const found = await db.query("SELECT * FROM users WHERE email = 'new@mail.com'");
@@ -67,9 +65,7 @@ describe("create", function () {
       userStatus: "active",
       createDate: moment().format("YYYYMMDD"),
       bio: "Bio of new user",
-      imageUrl: null,
-      modifyDate: null,
-      families: []
+      imageUrl: null
     });
 
     const found = await db.query("SELECT * FROM users WHERE email = 'new@mail.com'");
@@ -332,22 +328,6 @@ describe("update", function () {
       email: "u1@mail.com",
       createDate: moment().format("YYYYMMDD"),
       modifyDate: moment().format("YYYYMMDD"),
-      families: [
-        { 
-          familyId: testFamilyIds[0],
-          familyName: "fam1",
-          memStatus: "active",
-          isAdmin: false,
-          primaryFamily: false   
-        },
-        {
-          familyId: testFamilyIds[1],
-          familyName: "fam2",
-          memStatus: "active",
-          isAdmin: false,
-          primaryFamily: false
-        },
-      ],
       ...updateData
     });
   });

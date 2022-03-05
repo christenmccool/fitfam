@@ -21,7 +21,7 @@ class Membership {
    * data must include { userId, familyId }
    * data may include { memStatus, isAdmin, primaryFamily }
    *
-   * Returns { userId, familyId, memStatus, isAdmin, primaryFamily, createDate, modifyDate }
+   * Returns { userId, familyId, memStatus, isAdmin, primaryFamily, createDate }
    *
    * Throws BadRequestError on duplicates
    **/
@@ -72,7 +72,6 @@ class Membership {
           mem_status AS "memStatus",
           is_admin AS "isAdmin",
           primary_family AS "primaryFamily",
-          TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate",       
           TO_CHAR(create_date, 'YYYYMMDD') AS "createDate"`,             
       [...valuesArr]
     );
