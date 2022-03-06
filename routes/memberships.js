@@ -57,8 +57,8 @@ router.post("/", async function (req, res, next) {
   const query = req.query;
   if (query.userId !== undefined) query.userId = +query.userId;
   if (query.familyId !== undefined) query.familyId = +query.familyId;
-  query.isAdmin = query.isAdmin === "true" || query.isAdmin === "";
-  query.primaryFamily = query.primaryFamily === "true" || query.primaryFamily === "";
+  if (query.isAdmin !== undefined) query.isAdmin = query.isAdmin === "true" || query.isAdmin === "";
+  if (query.primaryFamily !== undefined) query.primaryFamily = query.primaryFamily === "true" || query.primaryFamily === "";
 
   try {  
     const validator = jsonschema.validate(query, membershipSearchSchema);

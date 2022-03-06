@@ -27,10 +27,11 @@ COPY workout_movement_import FROM '/Users/christenmccool/Documents/fitfam/sql/wo
 INSERT INTO workouts_movements 
   SELECT q.* FROM workout_movement_import, json_populate_record(null::workouts_movements, info::json) AS q;
 
-INSERT INTO users (email, user_password, first_name, last_name)
-  VALUES ('christen@mail.com', 'password', 'Christen', 'McCool'),
-         ('clay@mail.com', 'password', 'Clay', 'Braden'),
-         ('cami@mail.com', 'password', 'Cami', 'Cortney');
+--password for all is "password"
+INSERT INTO users (email, user_password, first_name, last_name, is_admin)
+  VALUES ('christen@mail.com', '$2b$12$AZH7virni5jlTTiGgEg4zu3lSvAw68qVEfSIOjJ3RqtbJbdW/Oi5q', 'Christen', 'McCool', true),
+         ('clay@mail.com', '$2b$12$AZH7virni5jlTTiGgEg4zu3lSvAw68qVEfSIOjJ3RqtbJbdW/Oi5q', 'Clay', 'Braden', false),
+         ('cami@mail.com', '$2b$12$AZH7virni5jlTTiGgEg4zu3lSvAw68qVEfSIOjJ3RqtbJbdW/Oi5q', 'Cami', 'Cortney', false);
 
 INSERT INTO families (family_name)
   VALUES ('mcbragren'),
@@ -58,5 +59,5 @@ INSERT INTO comments (result_id, user_id, content)
          (1, 2, 'Thank you!'),
          (3, 1, 'Proud of you'),
          (3, 2, 'Thank you so much'),
-         (4, 1, 'Super duper roud of you'),
+         (4, 1, 'Super duper proud of you'),
          (4, 3, 'Why did you talk me into this??');

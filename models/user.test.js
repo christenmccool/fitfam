@@ -1,6 +1,7 @@
 "use strict";
 
 const {
+  UnauthorizedError,
   NotFoundError,
   BadRequestError,
 } = require("../expressError");
@@ -23,6 +24,39 @@ beforeEach(commonBeforeEach);
 afterEach(commonAfterEach);
 afterAll(commonAfterAll);
 
+
+/************************************** authenticate */
+
+describe("authenticate", function () {
+  test("works", async function () {
+    const user = await User.authenticate("u1@mail.com", "password");
+    expect(user).toEqual({
+      id: testUserIds[0],
+      firstName: "First1",
+      lastName: "Last1",
+      email: "u1@mail.com",
+      isAdmin: false
+    });
+  });
+
+  test("unauth if user does not exist", async function () {
+    try {
+      await User.authenticate("nope", "password");
+    } catch (err) {
+      expect(err instanceof UnauthorizedError).toBeTruthy();
+    }
+  });
+
+  test("unauth if wrong password", async function () {
+    try {
+      await User.authenticate("u1@mail.com", "fake");
+      fail();
+    } catch (err) {
+      expect(err instanceof UnauthorizedError).toBeTruthy();
+    }
+  });
+});
+
 /************************************** create */
 
 describe("create", function () {
@@ -41,6 +75,7 @@ describe("create", function () {
     expect(user).toEqual({
       ...newUser,
       id: expect.any(Number),
+      isAdmin: false,
       userStatus: "active",
       createDate: moment().format("YYYYMMDD"),
       imageUrl: null,
@@ -56,12 +91,14 @@ describe("create", function () {
     let user = await User.create({
       ...newUser,
       password: "password-new",
+      isAdmin: true,
       bio: "Bio of new user"
     });
 
     expect(user).toEqual({
       ...newUser,
       id: expect.any(Number),
+      isAdmin: true,
       userStatus: "active",
       createDate: moment().format("YYYYMMDD"),
       bio: "Bio of new user",
@@ -101,6 +138,7 @@ describe("findAll", function () {
         email: "u1@mail.com",
         firstName: "First1",
         lastName: "Last1",
+        isAdmin: false,
         userStatus: "active",
         bio: null
       },
@@ -109,6 +147,7 @@ describe("findAll", function () {
         email: "u2@mail.com",
         firstName: "First2",
         lastName: "Last2",
+        isAdmin: false,
         userStatus: "active",
         bio: null  
       },
@@ -117,6 +156,7 @@ describe("findAll", function () {
         email: "u3@mail.com",
         firstName: "First3",
         lastName: "Last3",
+        isAdmin: true,
         userStatus: "active",
         bio: "Bio of u3"
       }
@@ -138,6 +178,7 @@ describe("findAll", function () {
         email: "u1@mail.com",
         firstName: "First1",
         lastName: "Last1",
+        isAdmin: false,
         userStatus: "active",
         bio: null
       },
@@ -146,6 +187,7 @@ describe("findAll", function () {
         email: "u2@mail.com",
         firstName: "First2",
         lastName: "Last2",
+        isAdmin: false,
         userStatus: "active",
         bio: null
       },
@@ -154,6 +196,7 @@ describe("findAll", function () {
         email: "u3@mail.com",
         firstName: "First3",
         lastName: "Last3",
+        isAdmin: true,
         userStatus: "active",
         bio: "Bio of u3"
       },
@@ -161,7 +204,8 @@ describe("findAll", function () {
         id: expect.any(Number),
         email: "new@mail.com",
         firstName: "First-new",
-        lastName: "Last-new",     
+        lastName: "Last-new",   
+        isAdmin: false,  
         userStatus: "active",
         bio: null
       }
@@ -176,6 +220,7 @@ describe("findAll", function () {
         email: "u1@mail.com",
         firstName: "First1",
         lastName: "Last1",
+        isAdmin: false,
         userStatus: "active",
         bio: null
       },
@@ -184,6 +229,7 @@ describe("findAll", function () {
         email: "u2@mail.com",
         firstName: "First2",
         lastName: "Last2",
+        isAdmin: false,
         userStatus: "active",
         bio: null
       },
@@ -192,6 +238,7 @@ describe("findAll", function () {
         email: "u3@mail.com",
         firstName: "First3",
         lastName: "Last3",
+        isAdmin: true,
         userStatus: "active",
         bio: "Bio of u3"
       }
@@ -206,6 +253,7 @@ describe("findAll", function () {
         email: "u1@mail.com",
         firstName: "First1",
         lastName: "Last1",
+        isAdmin: false,
         userStatus: "active",
         bio: null
       }
@@ -220,6 +268,7 @@ describe("findAll", function () {
         email: "u3@mail.com",
         firstName: "First3",
         lastName: "Last3",
+        isAdmin: true,
         userStatus: "active",
         bio: "Bio of u3"
       }
@@ -237,6 +286,7 @@ describe("findAll", function () {
         email: "u1@mail.com",
         firstName: "First1",
         lastName: "Last1",
+        isAdmin: false,
         userStatus: "active",
         bio: null
       },
@@ -245,6 +295,7 @@ describe("findAll", function () {
         email: "u2@mail.com",
         firstName: "First2",
         lastName: "Last2",
+        isAdmin: false,
         userStatus: "active",
         bio: null
       },
@@ -253,6 +304,7 @@ describe("findAll", function () {
         email: "u3@mail.com",
         firstName: "First3",
         lastName: "Last3",
+        isAdmin: true,
         userStatus: "active",
         bio: "Bio of u3"
       }
@@ -275,6 +327,7 @@ describe("find", function () {
       firstName: "First1",
       lastName: "Last1",
       email: "u1@mail.com",
+      isAdmin: false,
       userStatus: "active",
       createDate: moment().format("YYYYMMDD"),
       imageUrl: null,
@@ -326,6 +379,7 @@ describe("update", function () {
     expect(updatedUser).toEqual({
       id: testUserIds[0],
       email: "u1@mail.com",
+      isAdmin: false,
       createDate: moment().format("YYYYMMDD"),
       modifyDate: moment().format("YYYYMMDD"),
       ...updateData

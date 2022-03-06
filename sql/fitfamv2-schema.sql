@@ -11,6 +11,7 @@ CREATE TABLE users (
   user_password text, 
   first_name text NOT NULL,
   last_name text NOT NULL,
+  is_admin boolean DEFAULT false,
   user_status curr_status DEFAULT 'active' NOT NULL,
   image_url text,
   bio text,

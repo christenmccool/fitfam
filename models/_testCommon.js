@@ -1,5 +1,8 @@
 const db = require("../db.js");
 
+const bcrypt = require("bcrypt");
+const { BCRYPT_WORK_FACTOR } = require("../config");
+
 const testUserIds = [];
 const testFamilyIds = [];
 const testMembershipIds = [];
@@ -14,19 +17,21 @@ async function commonBeforeAll() {
   await db.query("DELETE FROM results");
   await db.query("DELETE FROM comments");
 
+  const hashedpassword = await bcrypt.hash("password", BCRYPT_WORK_FACTOR);
+
   const user1 = await db.query(
     `INSERT INTO users (email, user_password, first_name, last_name)
-      VALUES ('u1@mail.com', 'password1', 'First1', 'Last1')
+      VALUES ('u1@mail.com', '${hashedpassword}', 'First1', 'Last1')
       RETURNING id`
   );
   const user2 = await db.query(
     `INSERT INTO users (email, user_password, first_name, last_name, image_url)
-      VALUES ('u2@mail.com', 'password2', 'First2', 'Last2', 'user2image.com')
+      VALUES ('u2@mail.com', '${hashedpassword}', 'First2', 'Last2', 'user2image.com')
       RETURNING id`
   );
   const user3 = await db.query(
-    `INSERT INTO users (email, user_password, first_name, last_name, image_url, bio)
-      VALUES ('u3@mail.com', 'password3', 'First3', 'Last3', 'user3image.com', 'Bio of u3')
+    `INSERT INTO users (email, user_password, first_name, last_name, is_admin, image_url, bio)
+      VALUES ('u3@mail.com', '${hashedpassword}', 'First3', 'Last3', true, 'user3image.com', 'Bio of u3')
       RETURNING id`
   );
   testUserIds.push(user1.rows[0].id);

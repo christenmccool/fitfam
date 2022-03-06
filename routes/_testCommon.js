@@ -1,6 +1,7 @@
 "use strict";
 
 const db = require("../db.js");
+
 const User = require("../models/user");
 const Family = require("../models/family");
 const Membership = require("../models/membership");
@@ -24,15 +25,15 @@ async function commonBeforeAll() {
   const user1 = await User.create(
     {
       email: "u1@mail.com",
-      password: "password1",
+      password: "password",
       firstName: "First1",
-      lastName: "Last1",
+      lastName: "Last1"
     }
   );
   const user2 = await User.create(
     {
       email: "u2@mail.com",
-      password: "password2",
+      password: "password",
       firstName: "First2",
       lastName: "Last2",
       imageUrl: "user2image.com",
@@ -41,11 +42,12 @@ async function commonBeforeAll() {
   const user3 = await User.create(
     {
       email: "u3@mail.com",
-      password: "password3",
+      password: "password",
       firstName: "First3",
       lastName: "Last3",
       imageUrl: "user3image.com",
-      bio: "Bio of u3"
+      bio: "Bio of u3",
+      isAdmin: true
     }
   );
 

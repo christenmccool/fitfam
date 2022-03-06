@@ -7,6 +7,7 @@ const express = require("express");
 const jsonschema = require("jsonschema");
 const router = express.Router();
 
+const { ensureLoggedIn, ensureAdmin, ensureCorrectUserOrAdmin } = require("../middleware/auth");
 const { BadRequestError } = require("../expressError");
 
 const User = require("../models/user");
@@ -19,11 +20,11 @@ const userUpdateSchema = require("../schemas/userUpdate.json");
  * Create new user given user data
  *
  * data must include { email, password, firstName, lastName }
- * data may include { userStatus, imageUrl, bio }
+ * data may include { isAdmin, userStatus, imageUrl, bio }
  * 
- * user is { id, email, firstName, lastName, userStatus, imageUrl, bio, createDate }
+ * user is { id, email, firstName, lastName, isAdmin, userStatus, imageUrl, bio, createDate }
  **/
-router.post("/", async function (req, res, next) {
+router.post("/", ensureLoggedIn, ensureAdmin, async function (req, res, next) {
   try {
     const validator = jsonschema.validate(req.body, userNewSchema);
     if (!validator.valid) {
@@ -47,14 +48,18 @@ router.post("/", async function (req, res, next) {
  * - email
  * - firstName
  * - lastName
+ * - isAdmin
  * - userStatus
  * - bio (key word search)
  * 
- * user is { id, email, firstName, lastName, userStatus, bio }
+ * user is { id, email, firstName, lastName, isAdmin, userStatus, bio }
  **/
-router.get("/", async function (req, res, next) {
+router.get("/", ensureLoggedIn, ensureAdmin, async function (req, res, next) {
   try {  
-    const validator = jsonschema.validate(req.query, userSearchSchema);
+    const query = req.query;
+    if (query.isAdmin !== undefined) query.isAdmin = query.isAdmin === "true" || query.isAdmin === "";
+    
+    const validator = jsonschema.validate(query, userSearchSchema);
     if (!validator.valid) {
       const errs = validator.errors.map(e => e.stack);
       throw new BadRequestError(errs);
@@ -69,19 +74,19 @@ router.get("/", async function (req, res, next) {
 });
 
 
-/** GET /[id] => { user }
+/** GET /[userId] => { user }
  * Returns user data given user id
  * 
- * user is { id, email, firstName, lastName, userStatus, imageUrl, bio, createDate, modifyDate, families }
+ * user is { id, email, firstName, lastName, isAdmin, userStatus, imageUrl, bio, createDate, modifyDate, families }
  * 
  * families is [ family1, family2, ... ]
  *    where family is { familyId, familyname, status, isAdmin, primaryFamily, createDate, modifyDate }
  **/
-router.get("/:id", async function (req, res, next) {
+router.get("/:userId", ensureLoggedIn, ensureCorrectUserOrAdmin, async function (req, res, next) {
   try {  
-    const {id} = req.params;
+    const {userId} = req.params;
 
-    const user = await User.find(id);
+    const user = await User.find(userId);
 
     return res.json({ user });
   } catch (err) {
@@ -90,15 +95,15 @@ router.get("/:id", async function (req, res, next) {
 });
 
 
-/** PATCH /[id] { data } => { user }
+/** PATCH /[userId] { data } => { user }
  *
  * Data can include:
  *   { password, firstName, lastName, userStatus, imageUrl, bio }
  * Must include at least one property
  *
- * user is { id, email, firstName, lastName, userStatus, imageUrl, bio, createDate, modifyDate }
+ * user is { id, email, firstName, lastName, isAdmin, userStatus, imageUrl, bio, createDate, modifyDate }
  **/
-router.patch("/:id", async function (req, res, next) {
+router.patch("/:userId", ensureLoggedIn, ensureCorrectUserOrAdmin, async function (req, res, next) {
   try {
     const validator = jsonschema.validate(req.body, userUpdateSchema);
     if (!validator.valid) {
@@ -106,8 +111,8 @@ router.patch("/:id", async function (req, res, next) {
       throw new BadRequestError(errs);
     }
 
-    const {id} = req.params;
-    let user = await User.find(id);
+    const {userId} = req.params;
+    let user = await User.find(userId);
 
     user = await user.update(req.body);
 
@@ -118,15 +123,15 @@ router.patch("/:id", async function (req, res, next) {
 });
 
 
-/** DELETE /[id]  =>  { deleted: id }
+/** DELETE /[userId]  =>  { deleted: id }
  **/
-router.delete("/:id", async function (req, res, next) {
+router.delete("/:userId", ensureLoggedIn, ensureCorrectUserOrAdmin, async function (req, res, next) {
   try {
-    const {id} = req.params;
-    const user = await User.find(id);
+    const {userId} = req.params;
+    const user = await User.find(userId);
 
     await user.remove();
-    return res.json({ deleted: id });
+    return res.json({ deleted: userId });
   } catch (err) {
     return next(err);
   }

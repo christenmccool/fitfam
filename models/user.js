@@ -1,17 +1,21 @@
 /** User class */
 
 const db = require("../db");
-const { BadRequestError, NotFoundError } = require("../expressError");
+const bcrypt = require("bcrypt");
+
+const { UnauthorizedError, BadRequestError, NotFoundError } = require("../expressError");
+const { BCRYPT_WORK_FACTOR } = require("../config.js");
 
 const { buildInsertQuery, buildSelectQuery, buildUpdateQuery } = require("../utils/sql");
 
 class User {
-  constructor({ id, email, password, firstName, lastName, userStatus, imageUrl, bio, createDate, modifyDate, families }) {
+  constructor({ id, email, password, firstName, lastName, isAdmin, userStatus, imageUrl, bio, createDate, modifyDate, families }) {
     this.id = id;
     this.email = email;
     this.password = password;
     this.firstName = firstName;
     this.lastName = lastName;
+    this.isAdmin = isAdmin;
     this.userStatus = userStatus;
     this.imageUrl = imageUrl;
     this.bio = bio;
@@ -20,10 +24,42 @@ class User {
     this.families = families;
   }
 
+  /** authenticate user with username, password.
+   *
+   * Returns { id, email, firstName, lastName, userStatus }
+   *
+   * Throws UnauthorizedError is user not found or wrong password.
+   **/
+  static async authenticate(email, password) {
+    const result = await db.query(
+          `SELECT id, 
+                  email,
+                  user_password AS password,
+                  first_name AS "firstName",
+                  last_name AS "lastName",
+                  is_admin AS "isAdmin"
+           FROM users
+           WHERE email = $1`,
+        [email],
+    );
+
+    const user = result.rows[0];
+
+    if (user) {
+      const isValid = await bcrypt.compare(password, user.password);
+      if (isValid) {
+        delete user.password;    
+        return new User(user);
+      }
+    }
+
+    throw new UnauthorizedError("Invalid username/password");
+  }
+
   /** Create new user given data, update db, return new user data
    * 
    * data must include { email, password, firstName, lastName }
-   * data may include { userStatus, imageUrl, bio }
+   * data may include { isAdmin, userStatus, imageUrl, bio }
    *
    * Returns { id, email, firstName, lastName, userStatus, imageUrl, bio, createDate, modifyDate }
    *
@@ -41,16 +77,20 @@ class User {
       throw new BadRequestError(`Duplicate email: ${data.email}`);
     }
 
+    const hashedPassword = await bcrypt.hash(data.password, BCRYPT_WORK_FACTOR);
+    const dataWithHashedPassword = {...data, password: hashedPassword};
+
     const jstoSql = {
       email: "email",
       password: "user_password",
       firstName: "first_name",
       lastName: "last_name",
+      isAdmin: "is_admin",
       userStatus: "user_status",
       imageUrl: "image_url",
       bio: "bio"
     }
-    let {insertClause, valuesArr} = buildInsertQuery(data, jstoSql);
+    let {insertClause, valuesArr} = buildInsertQuery(dataWithHashedPassword, jstoSql);
 
     const res = await db.query(
       `INSERT INTO users 
@@ -59,6 +99,7 @@ class User {
                   email,
                   first_name AS "firstName", 
                   last_name AS "lastName", 
+                  is_admin AS "isAdmin",
                   user_status AS "userStatus",
                   image_url AS "imageUrl",
                   bio,
@@ -72,16 +113,18 @@ class User {
   }
 
   /** Find all users matching optional filtering criteria
-   * Filters are email, firstName, lastName, userStatus, bio (for key word)
+   * Filters are email, firstName, lastName, isAdmin, userStatus, bio (for key word)
    *
    * Returns [ user1, user2, ... ]
    * where user is { id, email, firstName, lastName, userStatus, bio }
    **/
   static async findAll(data) {
+
     const jstoSql = {
       email: "email",
       firstName: "first_name",
       lastName: "last_name",
+      isAdmin: "is_admin",
       userStatus: "user_status",
       bio: "bio"
     }
@@ -90,6 +133,7 @@ class User {
       email: "ILIKE",
       firstName: "ILIKE",
       lastName: "ILIKE",
+      isAdmin: "=",
       userStatus: "=",
       bio: "ILIKE"
     }
@@ -101,6 +145,7 @@ class User {
               email, 
               first_name AS "firstName",
               last_name AS "lastName",
+              is_admin AS "isAdmin",
               user_status AS "userStatus",
               bio 
         FROM users
@@ -126,6 +171,7 @@ class User {
               email, 
               first_name AS "firstName", 
               last_name AS "lastName", 
+              is_admin AS "isAdmin",
               user_status AS "userStatus",
               image_url AS "imageUrl",
               bio,
@@ -188,6 +234,7 @@ class User {
                   email,
                   first_name AS "firstName",
                   last_name AS "lastName",
+                  is_admin AS "isAdmin",
                   user_status AS "userStatus",
                   image_url AS "imageUrl",
                   bio,

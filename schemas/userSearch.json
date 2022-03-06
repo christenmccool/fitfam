@@ -19,6 +19,9 @@
       "minLength": 1,
       "maxLength": 30
     },
+    "isAdmin": {
+      "type": "boolean"
+    },
     "userStatus": {
       "type": "string",
       "enum": ["active", "pending", "blocked", "inactive"]

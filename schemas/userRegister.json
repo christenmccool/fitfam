@@ -5,7 +5,7 @@
   "required": [
     "email",
     "firstName",
-    "lastName", 
+    "lastName",
     "password"
   ],
   "properties": {
@@ -29,13 +29,6 @@
       "type": "string",
       "minLength": 1,
       "maxLength": 30
-    },
-    "isAdmin": {
-      "type": "boolean"
-    },
-    "userStatus": {
-      "type": "string",
-      "enum": ["active", "pending", "blocked", "inactive"]
     },
     "imageUrl": {
       "type": "string",
