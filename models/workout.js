@@ -1,6 +1,9 @@
 /** Workout class */
 
 const db = require("../db");
+
+const ApiCall = require("./apicall");
+
 const { NotFoundError } = require("../expressError");
 
 const { buildInsertQuery, buildSelectQuery, buildUpdateQuery } = require("../utils/sql");
@@ -60,6 +63,7 @@ class Workout {
     return new Workout(workout);
   }
 
+
   /** Find all workouts matching optional filtering criteria
    * Filters are swId, name, description, category, movementIds, publishDate, movementId 
    *
@@ -67,6 +71,27 @@ class Workout {
    * where workout is { id, swId, name, description, category, scoreType, createDate, publishDate }
    * */
   static async findAll(data) {
+    //If filter data includes publishDate, first ensure that the API workout of the day is in the database
+    //If it's not, call the API and add the workout to the database
+    if (data && data.publishDate) {
+      let res = await db.query(
+        `SELECT id,
+                wo_name AS name
+          FROM workouts
+          WHERE category = 'wod' AND publish_date=$1`,
+          [data.publishDate]
+      );
+      if (!res.rows.length) {
+        let workouts = await ApiCall.getWorkouts(data.publishDate);
+        for (let wo of workouts) {
+          let woData = {...wo};
+          delete woData.movementIds;
+          await Workout.create(woData);
+        }
+      }
+    }
+
+
     let dataWithoutMovementId = {...data};
     delete dataWithoutMovementId.movementId;
 

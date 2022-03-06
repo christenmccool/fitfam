@@ -8,7 +8,7 @@ const SUGARWOD_BASE_URL = "https://api.sugarwod.com/v2";
 
 class ApiCall {
 
-  static async getWorkout(date) {
+  static async getWorkouts(date) {
 
     let formattedDate = moment(date).format("YYYYMMDD");
 

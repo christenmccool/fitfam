@@ -58,9 +58,6 @@ const { BadRequestError } = require("../expressError");
     const sqlName = jsToSql[fields[i]];
     const op = compOp[fields[i]];
 
-    if (Array.isArray(data[fields[i]])) {
-      console.log(data[fields[i]]);
-    }
     if (op === "ILIKE") {
       whereClause += ` ${sqlName} ILIKE $${i+1} AND`;
       valuesArr.push(`%${data[fields[i]]}%`);

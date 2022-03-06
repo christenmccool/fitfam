@@ -32,7 +32,7 @@ const apicallsSearchSchema = require("../schemas/apicallsSearch.json");
     }
 
     let {publishDate} = req.query;
-    let data = await ApiCall.getWorkout(publishDate);
+    let data = await ApiCall.getWorkouts(publishDate);
 
     return res.json({ data });
   } catch (err) {

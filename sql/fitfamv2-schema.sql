@@ -14,8 +14,8 @@ CREATE TABLE users (
   user_status curr_status DEFAULT 'active' NOT NULL,
   image_url text,
   bio text,
-  create_date timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  modify_date timestamptz
+  create_date timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  modify_date timestamp
 );
 
 CREATE TABLE families (
@@ -23,8 +23,8 @@ CREATE TABLE families (
   family_name text NOT NULL,
   image_url text,
   bio text,
-  create_date timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  modify_date timestamptz
+  create_date timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  modify_date timestamp
 );
 
 CREATE TABLE users_families (
@@ -33,8 +33,8 @@ CREATE TABLE users_families (
   mem_status curr_status NOT NULL DEFAULT 'active',
   is_admin boolean DEFAULT false,
   primary_family boolean DEFAULT false,
-  create_date timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  modify_date timestamptz,
+  create_date timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  modify_date timestamp,
   PRIMARY KEY (user_id, family_id)
 );
 
@@ -45,9 +45,9 @@ CREATE TABLE workouts (
   wo_description text,
   category text DEFAULT 'custom',
   score_type text,
-  create_date timestamptz DEFAULT CURRENT_TIMESTAMP,
-  modify_date timestamptz, 
-  publish_date timestamptz DEFAULT CURRENT_TIMESTAMP
+  create_date timestamp DEFAULT CURRENT_TIMESTAMP,
+  modify_date timestamp, 
+  publish_date timestamp DEFAULT CURRENT_TIMESTAMP
 );   
 
 ALTER SEQUENCE workouts_id_seq RESTART WITH 450;
@@ -59,9 +59,9 @@ CREATE TABLE results (
   workout_id integer NOT NULL REFERENCES workouts ON DELETE CASCADE,
   score integer,
   notes text,
-  create_date timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  modify_date timestamptz,
-  complete_date timestamptz DEFAULT CURRENT_TIMESTAMP
+  create_date timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  modify_date timestamp,
+  complete_date timestamp DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE comments (
@@ -69,8 +69,8 @@ CREATE TABLE comments (
   result_id integer NOT NULL REFERENCES results ON DELETE CASCADE,
   user_id integer NOT NULL REFERENCES users ON DELETE CASCADE,
   content text NOT NULL,
-  create_date timestamptz DEFAULT CURRENT_TIMESTAMP NOT NULL,
-  modify_date timestamptz
+  create_date timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  modify_date timestamp
 );
 
 CREATE TABLE movements (
