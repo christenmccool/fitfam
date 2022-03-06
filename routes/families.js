@@ -7,6 +7,7 @@ const express = require("express");
 const jsonschema = require("jsonschema");
 const router = express.Router();
 
+const { ensureLoggedIn, ensureAdmin, ensureOwnFamilyorAdmin } = require("../middleware/auth");
 const { BadRequestError } = require("../expressError");
 
 const Family = require("../models/family");
@@ -22,7 +23,7 @@ const familyUpdateSchema = require("../schemas/familyUpdate.json");
  * 
  * family is { id, familyname, imageUrl, bio, createDate }
  **/
- router.post("/", async function (req, res, next) {
+ router.post("/", ensureLoggedIn, ensureAdmin, async function (req, res, next) {
   try {
     const validator = jsonschema.validate(req.body, familyNewSchema);
     if (!validator.valid) {
@@ -47,7 +48,7 @@ const familyUpdateSchema = require("../schemas/familyUpdate.json");
  * 
  * family is { id, familyName, image_url, bio }
  **/
- router.get("/", async function (req, res, next) {
+ router.get("/", ensureLoggedIn, async function (req, res, next) {
   try {  
     const validator = jsonschema.validate(req.query, familySearchSchema);
     if (!validator.valid) {
@@ -64,7 +65,7 @@ const familyUpdateSchema = require("../schemas/familyUpdate.json");
 });
 
 
-/** GET /[id] => { family }
+/** GET /[familyId] => { family }
  * Returns family data given family id
  * 
  * family is id, familyName, imageUrl, bio, createDate, modifyDate, users }
@@ -72,11 +73,11 @@ const familyUpdateSchema = require("../schemas/familyUpdate.json");
  * users is [ user1, user2, ... } ]
  *    where user is { userId, firstName, lastName }
  **/
- router.get("/:id", async function (req, res, next) {
+ router.get("/:familyId", ensureLoggedIn, ensureOwnFamilyorAdmin, async function (req, res, next) {
   try {  
-    const {id} = req.params;
+    const {familyId} = req.params;
 
-    const family = await Family.find(id);
+    const family = await Family.find(familyId);
 
     return res.json({ family });
   } catch (err) {
@@ -85,14 +86,14 @@ const familyUpdateSchema = require("../schemas/familyUpdate.json");
 });
 
 
-/** PATCH /[id] { data } => { family }
+/** PATCH /[familyId] { data } => { family }
  *
  * Data can include:
  *   { familyName, imageUrl, bio }
  *
  * Returns { id, familyName, imageUrl, bio, createDate, modifyDate }
  **/
- router.patch("/:id", async function (req, res, next) {
+ router.patch("/:familyId", ensureLoggedIn, ensureOwnFamilyorAdmin, async function (req, res, next) {
   try {
     const validator = jsonschema.validate(req.body, familyUpdateSchema);
     if (!validator.valid) {
@@ -100,8 +101,8 @@ const familyUpdateSchema = require("../schemas/familyUpdate.json");
       throw new BadRequestError(errs);
     }
 
-    const {id} = req.params;
-    let family = await Family.find(id);
+    const {familyId} = req.params;
+    let family = await Family.find(familyId);
 
     family = await family.update(req.body);
 
@@ -112,15 +113,15 @@ const familyUpdateSchema = require("../schemas/familyUpdate.json");
 });
 
 
-/** DELETE /[id]  =>  { deleted: id }
+/** DELETE /[familyId]  =>  { deleted: id }
  **/
- router.delete("/:id", async function (req, res, next) {
+ router.delete("/:familyId", ensureLoggedIn, ensureOwnFamilyorAdmin, async function (req, res, next) {
   try {
     const {id} = req.params;
-    let family = await Family.find(id);
+    let family = await Family.find(familyId);
 
     await family.remove();
-    return res.json({ deleted: id });
+    return res.json({ deleted: familyId });
   } catch (err) {
     return next(err);
   }

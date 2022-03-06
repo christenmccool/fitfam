@@ -7,6 +7,7 @@ const jsonschema = require("jsonschema");
 
 const router = express.Router();
 
+const { ensureLoggedIn, ensureValidReqBody } = require("../middleware/auth");
 const { BadRequestError } = require("../expressError");
 
 const Result = require("../models/result");
@@ -21,7 +22,7 @@ const resultUpdateSchema = require("../schemas/resultUpdate.json");
  * 
  * result is { id, userId, familyId, workoutId, score, notes, createDate, completeDate }
  **/
- router.post("/", async function (req, res, next) {
+ router.post("/", ensureLoggedIn, ensureValidReqBody, async function (req, res, next) {
   try {
     const validator = jsonschema.validate(req.body, resultNewSchema);
     if (!validator.valid) {
@@ -49,7 +50,7 @@ const resultUpdateSchema = require("../schemas/resultUpdate.json");
  * 
  * result is { id, userId, familyId, workoutId, score, notes, completeDate }
  **/
- router.get("/", async function (req, res, next) {
+ router.get("/", ensureLoggedIn, ensureValidReqBody, async function (req, res, next) {
   try {  
     const query = req.query;
     if (query.userId !== undefined) query.userId = +query.userId;

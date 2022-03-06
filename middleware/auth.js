@@ -6,7 +6,7 @@ const jwt = require("jsonwebtoken");
 const { SECRET_KEY } = require("../config");
 const { UnauthorizedError, ForbiddenError } = require("../expressError");
 
-const User = require("../models/user");
+const Membership = require("../models/membership");
 
 /** Authenticate user
  *
@@ -42,10 +42,9 @@ function ensureLoggedIn(req, res, next) {
   }
 }
 
-
-/** Require user to be admin
+/** Require user to be logged in as admin
  *
- * Otherwise raises Unauthorized
+ * Otherwise raises ForbiddenError
  */
 
 function ensureAdmin(req, res, next) {
@@ -59,11 +58,10 @@ function ensureAdmin(req, res, next) {
   }
 }
 
-/** Require user to be logged as admin or to be the user matching the route parameter
+/** Require user to be logged in as admin or to be logged in as the user matching the route parameter
  *
- * Otherwise raises Unauthorized
+ * Otherwise raises ForbiddenError
  */
-
 function ensureCorrectUserOrAdmin(req, res, next) {
   try {
     const user = res.locals.user;
@@ -76,10 +74,70 @@ function ensureCorrectUserOrAdmin(req, res, next) {
   }
 }
 
+/** Require user to be logged in as admin or to be a member of the family matching the route parameter
+ *
+ * Otherwise raises ForbiddenError
+ */
+ async function ensureOwnFamilyorAdmin(req, res, next) {
+  try {
+    const user = res.locals.user;
+    let { familyId } = req.params;
+    familyId = +familyId;
+
+    let userFamilies = await Membership.findAll( {userId: user.userId});
+    let userFamilyIds = userFamilies.map(ele => ele.familyId);
+    let isFamilyMember = userFamilyIds.includes(familyId);
+
+    if (!(user && (user.isAdmin || isFamilyMember ))) {
+      throw new ForbiddenError(`Access to admin and members of family ${familyId} only`);
+    }
+    return next();
+  } catch (err) {
+    return next(err);
+  }
+}
+
+/** Request body can only contain own userId and familyId of own family   
+ *
+ * Otherwise raises ForbiddenError
+ */
+ async function ensureValidReqBody(req, res, next) {
+  try {
+    const user = res.locals.user;
+
+    if (user && user.isAdmin) return next();
+
+    let {userId} = req.body;
+    if (userId !== undefined) {
+      if (!(user && user.userId === userId)) {
+        throw new ForbiddenError(`Access to admin and user ${userId} only`);
+      }
+    }
+
+    let {familyId} = req.body;
+    if (familyId !== undefined) {
+      let userFamilies = await Membership.findAll( {userId: user.userId});
+      let userFamilyIds = userFamilies.map(ele => ele.familyId);
+      let isFamilyMember = userFamilyIds.includes(familyId);
+  
+      if (!(user && isFamilyMember)) {
+        throw new ForbiddenError(`Access to admin and members of family ${familyId} only`);
+      }
+    }
+
+    return next();
+  } catch (err) {
+    return next(err);
+  }
+}
+
+
 
 module.exports = {
   authenticateJWT,
   ensureLoggedIn,
   ensureAdmin,
   ensureCorrectUserOrAdmin,
+  ensureOwnFamilyorAdmin,
+  ensureValidReqBody
 };
