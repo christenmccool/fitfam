@@ -7,8 +7,9 @@ const express = require("express");
 const jsonschema = require("jsonschema");
 const router = express.Router();
 
-const { ensureLoggedIn, ensureAdmin, ensureOwnFamilyorAdmin } = require("../middleware/auth");
-const { BadRequestError } = require("../expressError");
+const { ensureLoggedIn } = require("../middleware/auth");
+const { BadRequestError, ForbiddenError } = require("../expressError");
+const { verifyMembership } = require("../services/verifyMembership");
 
 const Family = require("../models/family");
 const familyNewSchema = require("../schemas/familyNew.json");
@@ -23,7 +24,7 @@ const familyUpdateSchema = require("../schemas/familyUpdate.json");
  * 
  * family is { id, familyname, imageUrl, bio, createDate }
  **/
- router.post("/", ensureLoggedIn, ensureAdmin, async function (req, res, next) {
+ router.post("/", ensureLoggedIn, async function (req, res, next) {
   try {
     const validator = jsonschema.validate(req.body, familyNewSchema);
     if (!validator.valid) {
@@ -73,9 +74,14 @@ const familyUpdateSchema = require("../schemas/familyUpdate.json");
  * users is [ user1, user2, ... } ]
  *    where user is { userId, firstName, lastName }
  **/
- router.get("/:familyId", ensureLoggedIn, ensureOwnFamilyorAdmin, async function (req, res, next) {
+ router.get("/:familyId", ensureLoggedIn, async function (req, res, next) {
   try {  
     const {familyId} = req.params;
+
+    const isMember = await verifyMembership(res.locals.user.userId, +familyId);
+    if (!res.locals.user.isAdmin && !isMember) {
+      throw new ForbiddenError(`Must be a member of family ${familyId} to access`);
+    }
 
     const family = await Family.find(familyId);
 
@@ -93,7 +99,7 @@ const familyUpdateSchema = require("../schemas/familyUpdate.json");
  *
  * Returns { id, familyName, imageUrl, bio, createDate, modifyDate }
  **/
- router.patch("/:familyId", ensureLoggedIn, ensureOwnFamilyorAdmin, async function (req, res, next) {
+ router.patch("/:familyId", ensureLoggedIn, async function (req, res, next) {
   try {
     const validator = jsonschema.validate(req.body, familyUpdateSchema);
     if (!validator.valid) {
@@ -102,6 +108,12 @@ const familyUpdateSchema = require("../schemas/familyUpdate.json");
     }
 
     const {familyId} = req.params;
+
+    const isMember = await verifyMembership(res.locals.user.userId, +familyId);
+    if (!res.locals.user.isAdmin && !isMember) {
+      throw new ForbiddenError(`Must be a member of family ${familyId} to access`);
+    }
+
     let family = await Family.find(familyId);
 
     family = await family.update(req.body);
@@ -115,9 +127,15 @@ const familyUpdateSchema = require("../schemas/familyUpdate.json");
 
 /** DELETE /[familyId]  =>  { deleted: id }
  **/
- router.delete("/:familyId", ensureLoggedIn, ensureOwnFamilyorAdmin, async function (req, res, next) {
+ router.delete("/:familyId", ensureLoggedIn, async function (req, res, next) {
   try {
-    const {id} = req.params;
+    const {familyId} = req.params;
+
+    const isMember = await verifyMembership(res.locals.user.userId, +familyId);
+    if (!res.locals.user.isAdmin && !isMember) {
+      throw new ForbiddenError(`Must be a member of family ${familyId} to access`);
+    }
+
     let family = await Family.find(familyId);
 
     await family.remove();

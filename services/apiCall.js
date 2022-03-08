@@ -1,11 +1,13 @@
-/** API call class */
-
 const axios = require("axios");
 const moment = require("moment");
 
 const API_KEY = require("../secret");
 const SUGARWOD_BASE_URL = "https://api.sugarwod.com/v2";
 
+/** Api Calls class
+ *
+ * Supplies methods used to get data from the SugarWOD Api
+ */
 class ApiCall {
 
   static async getWorkouts(date) {

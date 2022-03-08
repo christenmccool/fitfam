@@ -3,12 +3,12 @@
 const {
   NotFoundError,
   BadRequestError,
-} = require("../expressError");
+} = require("../../expressError");
 
-const db = require("../db.js");
+const db = require("../../db.js");
 const moment = require("moment");
 
-const Membership = require("./membership.js");
+const Membership = require("../../models/membership.js");
 const {
   commonBeforeAll,
   commonBeforeEach,

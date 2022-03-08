@@ -1,7 +1,7 @@
-const db = require("../db.js");
+const db = require("../../db.js");
 
 const bcrypt = require("bcrypt");
-const { BCRYPT_WORK_FACTOR } = require("../config");
+const { BCRYPT_WORK_FACTOR } = require("../../config");
 
 const testUserIds = [];
 const testFamilyIds = [];

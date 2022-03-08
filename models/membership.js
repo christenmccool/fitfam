@@ -50,7 +50,7 @@ class Membership {
     );
 
     if (duplicateCheck.rows[0]) {
-      throw new BadRequestError(`User ${data.userId} is already a memeber of family: ${data.familyId}`);
+      throw new BadRequestError(`User ${data.userId} is already a member of family: ${data.familyId}`);
     }
     
     const jstoSql = {

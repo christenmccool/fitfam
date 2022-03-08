@@ -2,7 +2,7 @@
 
 const db = require("../db");
 
-const ApiCall = require("./apicall");
+const ApiCall = require("../services/apiCall");
 
 const { NotFoundError } = require("../expressError");
 
@@ -12,7 +12,7 @@ const { buildInsertQuery, buildSelectQuery, buildUpdateQuery } = require("../uti
 /** Workout in the database. */
 
 class Workout {
-  constructor({ id, swId, name, description, scoreType, category, createDate, modifyDate, publishDate }) {
+  constructor({ id, swId, name, description, scoreType, category, createDate, modifyDate, publishDate, movements }) {
     this.id = id;
     this.swId = swId;
     this.name = name;
@@ -22,6 +22,7 @@ class Workout {
     this.createDate = createDate;
     this.modifyDate = modifyDate;
     this.publishDate = publishDate;
+    this.movements = movements;
   }
 
   /** Create new workout given data, update db, return new workout data
@@ -68,7 +69,7 @@ class Workout {
    * Filters are swId, name, description, category, movementIds, publishDate, movementId 
    *
    * Returns [ workout1, workout1, ... ]
-   * where workout is { id, swId, name, description, category, scoreType, createDate, publishDate }
+   * where workout is { id, name, description }
    * */
   static async findAll(data) {
     //If filter data includes publishDate, first ensure that the API workout of the day is in the database
@@ -85,8 +86,20 @@ class Workout {
         let workouts = await ApiCall.getWorkouts(data.publishDate);
         for (let wo of workouts) {
           let woData = {...wo};
+          let movementIds = wo.movementIds;
           delete woData.movementIds;
-          await Workout.create(woData);
+          let newWorkout = await Workout.create(woData);
+
+          //insert workout's movements ids into the db
+          for (let movementId of movementIds) {
+            await db.query(
+              `INSERT INTO workouts_movements
+                (wo_id, movement_id)
+                VALUES
+                ($1, $2)`,
+                [newWorkout.id, movementId]
+            )
+          }
         }
       }
     }
@@ -118,23 +131,31 @@ class Workout {
     //add intersect to workouts_movements table clause if movementId array supplied
     let intersectClauses = "";
     if (data.movementId && data.movementId.length) {
+      let startingInd = valuesArr.length + 1;
       for (let i=0; i < data.movementId.length; i++) {
         intersectClauses += ` INTERSECT SELECT w.id, wo_name AS name
                                 FROM workouts w 
                                 JOIN workouts_movements wm ON w.id = wm.wo_id 
                                 JOIN movements m ON m.id = wm.movement_id 
-                                WHERE m.id = $${valuesArr.length + i + 1}`;
+                                WHERE m.id = $${startingInd + i}`;
         valuesArr.push(data.movementId[i]);
       }  
     }
 
     let res = await db.query(
-      `SELECT id,
-              wo_name AS name
-        FROM workouts
-        ${whereClause}
-        ${intersectClauses}
-        ORDER BY name`,
+      `SELECT w.id, 
+              w.wo_name AS name,
+              w.wo_description AS description
+        FROM 
+          (SELECT id,
+                  wo_name AS name
+            FROM workouts w
+            ${whereClause}
+            ${intersectClauses}) i
+        JOIN
+          workouts w
+          ON w.id = i.id
+          ORDER BY publish_date`,
         [...valuesArr]
     );
 
@@ -144,7 +165,8 @@ class Workout {
 
   /** Given a workout id, return details about workout.
    *
-   * Returns { id, swId, name, description, category, scoreType, createDate, modifyDate, publishDate }
+   * Returns { id, swId, name, description, category, scoreType, createDate, modifyDate, publishDate, movements }
+   *  where movements is {movementId, movementName, youtubeId}
    *
    * Throws NotFoundError if not found.
    **/
@@ -168,7 +190,20 @@ class Workout {
 
     if (!workout) throw new NotFoundError(`No workout: ${id}`);
 
-    return new Workout(workout);
+    const movementRes = await db.query(
+      `SELECT wm.movement_id AS "movementId",
+              m.movement_name AS "movementName",
+              m.youtube_id AS "youtubeId"
+        FROM workouts_movements wm
+        JOIN movements m
+        ON wm.movement_id=m.id
+        WHERE wm.wo_id=$1`,
+        [id]
+    )
+
+    let movements = movementRes.rows;
+
+    return new Workout({...workout, movements});
   }
 
   /** Update workout data 

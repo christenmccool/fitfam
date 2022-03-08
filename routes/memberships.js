@@ -7,8 +7,11 @@ const express = require("express");
 const jsonschema = require("jsonschema");
 const router = express.Router();
 
-const { BadRequestError } = require("../expressError");
+const { ensureLoggedIn , ensureCorrectUserOrAdmin} = require("../middleware/auth");
+const { BadRequestError, ForbiddenError } = require("../expressError");
+
 const Membership = require("../models/membership");
+
 const membershipNewSchema = require("../schemas/membershipNew.json");
 const membershipSearchSchema = require("../schemas/membershipSearch.json");
 const membershipUpdateSchema = require("../schemas/membershipUpdate.json");
@@ -23,12 +26,17 @@ const membershipUpdateSchema = require("../schemas/membershipUpdate.json");
 * membership is { userId, familyId, memStatus, isAdmin, primaryFamily, createDate }
 **/
 
-router.post("/", async function (req, res, next) {
+router.post("/", ensureLoggedIn, async function (req, res, next) {
   try {
     const validator = jsonschema.validate(req.body, membershipNewSchema);
     if (!validator.valid) {
       const errs = validator.errors.map(e => e.stack);
       throw new BadRequestError(errs);
+    }
+
+    const {userId} = req.body;
+    if (!res.locals.user.isAdmin && !(res.locals.user.userId === +userId)) {
+      throw new ForbiddenError(`Only admin or a user themselves can add a user to a family`);
     }
 
     const membership = await Membership.create(req.body);
@@ -53,14 +61,14 @@ router.post("/", async function (req, res, next) {
  * membership is { userId, familyId, memStatus, isAdmin, primaryFamily, createDate, modifyDate }
  **/
 
- router.get("/", async function (req, res, next) {
-  const query = req.query;
-  if (query.userId !== undefined) query.userId = +query.userId;
-  if (query.familyId !== undefined) query.familyId = +query.familyId;
-  if (query.isAdmin !== undefined) query.isAdmin = query.isAdmin === "true" || query.isAdmin === "";
-  if (query.primaryFamily !== undefined) query.primaryFamily = query.primaryFamily === "true" || query.primaryFamily === "";
-
+ router.get("/", ensureLoggedIn, async function (req, res, next) {
   try {  
+    const query = req.query;
+    if (query.userId !== undefined) query.userId = +query.userId;
+    if (query.familyId !== undefined) query.familyId = +query.familyId;
+    if (query.isAdmin !== undefined) query.isAdmin = query.isAdmin === "true" || query.isAdmin === "";
+    if (query.primaryFamily !== undefined) query.primaryFamily = query.primaryFamily === "true" || query.primaryFamily === "";
+  
     const validator = jsonschema.validate(query, membershipSearchSchema);
     if (!validator.valid) {
       const errs = validator.errors.map(e => e.stack);
@@ -82,7 +90,7 @@ router.post("/", async function (req, res, next) {
  * membership is { userId, familyId, memStatus, isAdmin, primaryFamily, createDate, modifyDate }
  * 
  **/
- router.get("/:userId-:familyId", async function (req, res, next) {
+ router.get("/:userId-:familyId", ensureLoggedIn, ensureCorrectUserOrAdmin, async function (req, res, next) {
   try {  
     const {userId, familyId} = req.params;
     const membership = await Membership.find(userId, familyId);
@@ -103,7 +111,7 @@ router.post("/", async function (req, res, next) {
  * membership is { userId, familyId, memStatus, isAdmin, primaryFamily, createDate, modifyDate 
  **/
 
- router.patch("/:userId-:familyId", async function (req, res, next) {
+ router.patch("/:userId-:familyId", ensureLoggedIn, ensureCorrectUserOrAdmin, async function (req, res, next) {
   try {
     const validator = jsonschema.validate(req.body, membershipUpdateSchema);
     if (!validator.valid) {
@@ -125,7 +133,7 @@ router.post("/", async function (req, res, next) {
 
 /** DELETE /[userId]-[familyId]  =>  { deleted: userId-familyId }
  **/
- router.delete("/:userId-:familyId", async function (req, res, next) {
+ router.delete("/:userId-:familyId", ensureLoggedIn, ensureCorrectUserOrAdmin, async function (req, res, next) {
   try {
     const {userId, familyId} = req.params;
     const membership = await Membership.find(userId, familyId);

@@ -3,10 +3,10 @@
 const request = require("supertest");
 const moment = require("moment");
 
-const app = require("../app");
+const app = require("../../app");
 
 const jwt = require("jsonwebtoken");
-const { SECRET_KEY } = require("../config");
+const { SECRET_KEY } = require("../../config");
 
 const {
   commonBeforeAll,

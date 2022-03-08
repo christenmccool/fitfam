@@ -23,6 +23,8 @@ const userUpdateSchema = require("../schemas/userUpdate.json");
  * data may include { isAdmin, userStatus, imageUrl, bio }
  * 
  * user is { id, email, firstName, lastName, isAdmin, userStatus, imageUrl, bio, createDate }
+ * 
+ * must be admin to access since new admin user can be created
  **/
 router.post("/", ensureLoggedIn, ensureAdmin, async function (req, res, next) {
   try {

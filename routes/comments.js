@@ -6,6 +6,8 @@ const express = require("express");
 const jsonschema = require("jsonschema");
 
 const router = express.Router();
+
+const { ensureLoggedIn } = require("../middleware/auth");
 const { BadRequestError } = require("../expressError");
 
 const Comment = require("../models/comment");
@@ -20,7 +22,7 @@ const commentUpdateSchema = require("../schemas/commentUpdate.json");
  * 
  * comment is { id, resultId, userId, content, createDate }
  **/
- router.post("/", async function (req, res, next) {
+ router.post("/", ensureLoggedIn, async function (req, res, next) {
   try {    
     const validator = jsonschema.validate(req.body, commentNewSchema);
     if (!validator.valid) {
@@ -47,7 +49,7 @@ const commentUpdateSchema = require("../schemas/commentUpdate.json");
  * 
  * comment is { id, resultId, userId, content, createDate, modifyDate }
  **/
- router.get("/", async function (req, res, next) {
+ router.get("/", ensureLoggedIn, async function (req, res, next) {
   try {  
     const query = req.query;
     if (query.resultId !== undefined) query.resultId = +query.resultId;
@@ -73,7 +75,7 @@ const commentUpdateSchema = require("../schemas/commentUpdate.json");
  * 
  * comment is { id, resultId, userId, content, createDate, modifyDate }
  **/
- router.get("/:id", async function (req, res, next) {
+ router.get("/:id", ensureLoggedIn, async function (req, res, next) {
   try {  
     const {id} = req.params;
     
@@ -94,7 +96,7 @@ const commentUpdateSchema = require("../schemas/commentUpdate.json");
  * Returns { id, resultId, userId, content, createDate, modifyDate }
  **/
 
- router.patch("/:id", async function (req, res, next) {
+ router.patch("/:id", ensureLoggedIn, async function (req, res, next) {
   try {
     const validator = jsonschema.validate(req.body, commentUpdateSchema);
     if (!validator.valid) {
@@ -116,7 +118,7 @@ const commentUpdateSchema = require("../schemas/commentUpdate.json");
 
 /** DELETE /[id]  =>  { deleted: id }
  **/
- router.delete("/:id", async function (req, res, next) {
+ router.delete("/:id", ensureLoggedIn, async function (req, res, next) {
   try {
     const {id} = req.params;
     let comment = await Comment.find(id);

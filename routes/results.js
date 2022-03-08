@@ -7,8 +7,9 @@ const jsonschema = require("jsonschema");
 
 const router = express.Router();
 
-const { ensureLoggedIn, ensureValidReqBody } = require("../middleware/auth");
-const { BadRequestError } = require("../expressError");
+const { ensureLoggedIn } = require("../middleware/auth");
+const { BadRequestError, ForbiddenError } = require("../expressError");
+const { verifyMembership } = require("../services/verifyMembership");
 
 const Result = require("../models/result");
 const resultNewSchema = require("../schemas/resultNew.json");
@@ -22,12 +23,25 @@ const resultUpdateSchema = require("../schemas/resultUpdate.json");
  * 
  * result is { id, userId, familyId, workoutId, score, notes, createDate, completeDate }
  **/
- router.post("/", ensureLoggedIn, ensureValidReqBody, async function (req, res, next) {
+ router.post("/", ensureLoggedIn, async function (req, res, next) {
   try {
     const validator = jsonschema.validate(req.body, resultNewSchema);
     if (!validator.valid) {
       const errs = validator.errors.map(e => e.stack);
       throw new BadRequestError(errs);
+    }
+
+    //user may only post for themselves
+    const {userId} = req.body;
+    if (!res.locals.user.isAdmin && !(res.locals.user.userId === +userId)) {
+      throw new ForbiddenError(`Only admin or a user themselves can add a user's result`);
+    }
+
+    //user may only post to a family they are a member of
+    const {familyId} = req.body;
+    const isMember = await verifyMembership(res.locals.user.userId, +familyId);
+    if (!res.locals.user.isAdmin && !isMember) {
+      throw new ForbiddenError(`User can only post to own families`);
     }
 
     const result = await Result.create(req.body);
@@ -50,7 +64,7 @@ const resultUpdateSchema = require("../schemas/resultUpdate.json");
  * 
  * result is { id, userId, familyId, workoutId, score, notes, completeDate }
  **/
- router.get("/", ensureLoggedIn, ensureValidReqBody, async function (req, res, next) {
+ router.get("/", ensureLoggedIn, async function (req, res, next) {
   try {  
     const query = req.query;
     if (query.userId !== undefined) query.userId = +query.userId;
@@ -78,7 +92,7 @@ const resultUpdateSchema = require("../schemas/resultUpdate.json");
  * 
  * result is { id, userId, familyId, workoutId, score, notes, createDate, modifyDate, completeDate }
  **/
- router.get("/:id", async function (req, res, next) {
+ router.get("/:id", ensureLoggedIn, async function (req, res, next) {
   try {  
     const {id} = req.params;
     
@@ -99,7 +113,7 @@ const resultUpdateSchema = require("../schemas/resultUpdate.json");
  * Returns { id, userId, familyId, workoutId, score, notes, createDate, modifyDate, completeDate }
  **/
 
- router.patch("/:id", async function (req, res, next) {
+ router.patch("/:id", ensureLoggedIn, async function (req, res, next) {
   try {
     const validator = jsonschema.validate(req.body, resultUpdateSchema);
     if (!validator.valid) {
@@ -121,7 +135,7 @@ const resultUpdateSchema = require("../schemas/resultUpdate.json");
 
 /** DELETE /[id]  =>  { deleted: id }
  **/
- router.delete("/:id", async function (req, res, next) {
+ router.delete("/:id", ensureLoggedIn, async function (req, res, next) {
   try {
     const {id} = req.params;
     let result = await Result.find(id);

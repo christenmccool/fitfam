@@ -1,13 +1,13 @@
 "use strict";
 
-const db = require("../db.js");
+const db = require("../../db.js");
 
-const User = require("../models/user");
-const Family = require("../models/family");
-const Membership = require("../models/membership");
-const Workout = require("../models/workout");
-const Result = require("../models/result");
-const Comment = require("../models/comment");
+const User = require("../../models/user");
+const Family = require("../../models/family");
+const Membership = require("../../models/membership");
+const Workout = require("../../models/workout");
+const Result = require("../../models/result");
+const Comment = require("../../models/comment");
 
 const testUserIds = [];
 const testFamilyIds = [];

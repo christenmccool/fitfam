@@ -7,6 +7,7 @@ const express = require("express");
 const jsonschema = require("jsonschema");
 const router = express.Router();
 
+const { ensureLoggedIn } = require("../middleware/auth");
 const { BadRequestError } = require("../expressError");
 
 const Workout = require("../models/workout");
@@ -23,7 +24,7 @@ const workoutUpdateSchema = require("../schemas/workoutUpdate.json");
  *  
  * workout is { id, swId, name, description, category, scoreType, createDate, publishDate }
  **/
- router.post("/", async function (req, res, next) {
+ router.post("/", ensureLoggedIn, async function (req, res, next) {
   try {
     const validator = jsonschema.validate(req.body, workoutNewSchema);
     if (!validator.valid) {
@@ -53,7 +54,7 @@ const workoutUpdateSchema = require("../schemas/workoutUpdate.json");
  * - publishDate
  * - movementId
  * 
- * workout is { id, swId, name, description, category, scoreType, createDate, modifyDate, publishDate }
+ * workout is { id, swId, name, description }
  **/
 
 router.get("/", async function (req, res, next) {
@@ -81,7 +82,8 @@ router.get("/", async function (req, res, next) {
 /** GET /[id] => { workout }
  * Returns workout details given workout id
  * 
- * workout is { id, swId, name, description, category, scoreType, createDate, modifyDate, publishDate }
+ * workout is { id, swId, name, description, category, scoreType, createDate, modifyDate, publishDate, movements }
+ *    where movements is {movementId, movementName, youtubeId}
  **/
  router.get("/:id", async function (req, res, next) {
   try {  
@@ -104,7 +106,7 @@ router.get("/", async function (req, res, next) {
  * Returns { id, swId, name, description, category, scoreType, createDate, modifyDate, publishDate }
  **/
 
- router.patch("/:id", async function (req, res, next) {
+ router.patch("/:id", ensureLoggedIn, async function (req, res, next) {
   try {
     const validator = jsonschema.validate(req.body, workoutUpdateSchema);
     if (!validator.valid) {
@@ -127,7 +129,7 @@ router.get("/", async function (req, res, next) {
 
 /** DELETE /[id]  =>  { deleted: id }
  **/
- router.delete("/:id", async function (req, res, next) {
+ router.delete("/:id", ensureLoggedIn, async function (req, res, next) {
   try {
     const {id} = req.params;
     let workout = await Workout.find(id);
