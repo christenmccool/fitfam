@@ -66,7 +66,8 @@ class Workout {
 
 
   /** Find all workouts matching optional filtering criteria
-   * Filters are swId, name, description, category, movementIds, publishDate, movementId 
+   * Filters are swId, name, description, category, publishDate, movementId 
+   * Filter 'keyword' is name or description
    *
    * Returns [ workout1, workout1, ... ]
    * where workout is { id, name, description }
@@ -105,8 +106,9 @@ class Workout {
     }
 
 
-    let dataWithoutMovementId = {...data};
-    delete dataWithoutMovementId.movementId;
+    let dataPartial = {...data};
+    delete dataPartial.movementId;
+    delete dataPartial.keyword;
 
     const jstoSql = {
       swId: "sw_id",
@@ -126,8 +128,17 @@ class Workout {
       publishDate: "date"
     }
 
-    let {whereClause, valuesArr} = buildSelectQuery(dataWithoutMovementId, jstoSql, compOp);
+    let {whereClause, valuesArr} = buildSelectQuery(dataPartial, jstoSql, compOp);
 
+    if (data.keyword) {
+      if (!valuesArr.length) {
+        whereClause = "WHERE wo_name ILIKE $1 OR wo_description ILIKE $1 "
+      } else {
+        whereClause += `AND (wo_name ILIKE $${valuesArr.length + 1} OR wo_description ILIKE $${valuesArr.length + 1}) `
+      }
+      valuesArr.push(`%${data.keyword}%`)
+    }
+    console.log(whereClause)
     //add intersect to workouts_movements table clause if movementId array supplied
     let intersectClauses = "";
     if (data.movementId && data.movementId.length) {
