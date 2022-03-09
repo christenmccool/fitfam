@@ -48,11 +48,13 @@ const workoutUpdateSchema = require("../schemas/workoutUpdate.json");
  * Search filters:
  * - swId (API id)
  * - name
- * - description (key word)
+ * - description 
  * - category ("girls", "heroes", "games", "wod", "custom")
  * - scoreType
  * - publishDate
  * - movementId
+ * 
+ * - keyword (name or description)
  * 
  * workout is { id, swId, name, description }
  **/

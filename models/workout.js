@@ -138,7 +138,7 @@ class Workout {
       }
       valuesArr.push(`%${data.keyword}%`)
     }
-    console.log(whereClause)
+
     //add intersect to workouts_movements table clause if movementId array supplied
     let intersectClauses = "";
     if (data.movementId && data.movementId.length) {
