@@ -33,6 +33,13 @@
       "minLength": 1,
       "maxLength": 20
     },
+    "featuredDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "createBy": {
+      "type": "integer"
+    },
     "movementId": {
       "type": "array",
       "items":

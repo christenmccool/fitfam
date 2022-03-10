@@ -48,6 +48,7 @@ CREATE TABLE workouts (
   score_type text,
   create_date timestamp DEFAULT CURRENT_TIMESTAMP,
   modify_date timestamp,
+  featured_date timestamp,
   create_by integer REFERENCES users ON DELETE CASCADE
 );   
 

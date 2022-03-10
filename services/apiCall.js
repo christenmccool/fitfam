@@ -26,9 +26,9 @@ class ApiCall {
           swId: wo.id,
           name: wo.attributes.title,
           description: wo.attributes.description,
-          category: "wod",
+          category: "featured",
           scoreType: wo.attributes.score_type,
-          publishDate: wo.attributes.scheduled_date,
+          featuredDate: wo.attributes.scheduled_date,
           movementIds: wo.attributes.movement_ids
         }
       data.push(workout);

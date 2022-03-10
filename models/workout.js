@@ -12,7 +12,7 @@ const { buildInsertQuery, buildSelectQuery, buildUpdateQuery } = require("../uti
 /** Workout in the database. */
 
 class Workout {
-  constructor({ id, swId, name, description, scoreType, category, createDate, modifyDate, publishDate, movements }) {
+  constructor({ id, swId, name, description, scoreType, category, createDate, modifyDate, featuredDate, createBy, movements }) {
     this.id = id;
     this.swId = swId;
     this.name = name;
@@ -21,16 +21,18 @@ class Workout {
     this.category = category;
     this.createDate = createDate;
     this.modifyDate = modifyDate;
+    this.featuredDate = featuredDate;
+    this.createBy = createBy;
     this.movements = movements;
   }
 
   /** Create new workout given data, update db, return new workout data
    *    
    * Data may include:
-   *   { swId, name, description, category, scoreType }
+   *   { swId, name, description, category, scoreType, featuredDate, createBy }
    * data must include at least one property
    *
-   * Returns { id, swId, name, description, category, scoreType, createDate }
+   * Returns { id, swId, name, description, category, scoreType, createDate, featuredDate, createBy }
    **/
   static async create(data) {
     const jstoSql = {
@@ -39,6 +41,8 @@ class Workout {
       description: "wo_description",
       category: "category",
       scoreType: "score_type",
+      featuredDate: "featured_date",
+      createBy: "create_by"
     }
 
     let {insertClause, valuesArr} = buildInsertQuery(data, jstoSql);
@@ -52,7 +56,9 @@ class Workout {
                   wo_description AS description,
                   score_type AS "scoreType",
                   category,
-                  TO_CHAR(create_date, 'YYYYMMDD') AS "createDate"`,           
+                  TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",  
+                  TO_CHAR(featured_date, 'YYYYMMDD') AS "featuredDate",
+                  create_by as "createBy"`,                    
       [...valuesArr]
     );
 
@@ -112,45 +118,46 @@ class Workout {
 
 
   /** Find all workouts matching optional filtering criteria
-   * Filters are swId, name, description, category, movementId 
+   * Filters are swId, name, description, category, featuredDate, createBy, movementId 
    * Filter 'keyword' is name or description
    *
    * Returns [ workout1, workout1, ... ]
    * where workout is { id, name, description }
    * */
   static async findAll(data) {
-    //If filter data includes publishDate, first ensure that the API workout of the day is in the database
+    //If filter data includes featuredBy, first ensure that the API featured workout is in the database
     //If it's not, call the API and add the workout to the database
-    // if (data && data.publishDate) {
-    //   return this.findByDate(data.publishDate);
-      // let res = await db.query(
-      //   `SELECT id,
-      //           wo_name AS name
-      //     FROM workouts
-      //     WHERE category = 'wod' AND publish_date=$1`,
-      //     [data.publishDate]
-      // );
-      // if (!res.rows.length) {
-      //   let workouts = await ApiCall.getWorkouts(data.publishDate);
-      //   for (let wo of workouts) {
-      //     let woData = {...wo};
-      //     let movementIds = wo.movementIds;
-      //     delete woData.movementIds;
-      //     let newWorkout = await Workout.create(woData);
+    if (data && data.featuredDate) {
+      let res = await db.query(
+        `SELECT id,
+                wo_name AS name
+          FROM workouts
+          WHERE category = 'featured' AND featured_date=$1`,
+          [data.featuredDate]
+      );
 
-      //     //insert workout's movements ids into the db
-      //     for (let movementId of movementIds) {
-      //       await db.query(
-      //         `INSERT INTO workouts_movements
-      //           (wo_id, movement_id)
-      //           VALUES
-      //           ($1, $2)`,
-      //           [newWorkout.id, movementId]
-      //       )
-      //     }
-      //   }
-      // }
-    // }
+      if (!res.rows.length) {
+        let workouts = await ApiCall.getWorkouts(data.featuredDate);
+
+        for (let wo of workouts) {
+          let woData = {...wo};
+          let movementIds = wo.movementIds;
+          delete woData.movementIds;
+
+          let newWorkout = await Workout.create(woData);
+
+          for (let movementId of movementIds) {
+            await db.query(
+              `INSERT INTO workouts_movements
+                (wo_id, movement_id)
+                VALUES
+                ($1, $2)`,
+                [newWorkout.id, movementId]
+            )
+          }
+        }
+      }
+    }
 
     let dataPartial = {...data};
     delete dataPartial.movementId;
@@ -162,7 +169,8 @@ class Workout {
       description: "wo_description",
       category: "category",
       scoreType: "score_type",
-      // publishDate: "publish_date"
+      featuredDate: "featured_date",
+      createBy: "create_by"
     }
   
     const compOp = {
@@ -171,7 +179,8 @@ class Workout {
       description: "ILIKE",
       category: "ILIKE",
       scoreType: "ILIKE",
-      // publishDate: "date"
+      featuredDate: "date",
+      createBy: "="
     }
 
     let {whereClause, valuesArr} = buildSelectQuery(dataPartial, jstoSql, compOp);
@@ -196,12 +205,6 @@ class Workout {
                                 JOIN movements m ON m.id = wm.movement_id 
                                 WHERE m.id = $${startingInd + i}`;
         valuesArr.push(data.movementId[i]);
-      //     intersectClauses += ` INTERSECT SELECT w.id, wo_name AS name
-      //       FROM benchmarks w 
-      //       JOIN benchmarks_movements wm ON w.id = wm.wo_id 
-      //       JOIN movements m ON m.id = wm.movement_id 
-      //       WHERE m.id = $${startingInd + i}`;
-      //     valuesArr.push(data.movementId[i]);
       }  
     }
 
@@ -221,21 +224,6 @@ class Workout {
           ORDER BY wo_name`,
         [...valuesArr]
     );
-    // let res = await db.query(
-    //   `SELECT w.id, 
-    //           w.wo_name AS name,
-    //           w.wo_description AS description
-    //     FROM 
-    //       (SELECT id,
-    //               wo_name AS name
-    //         FROM benchmarks 
-    //         ${whereClause}
-    //         ${intersectClauses}) i
-    //     JOIN
-    //       benchmarks w
-    //       ON w.id = i.id`,
-    //     [...valuesArr]
-    // );
 
     return res.rows.map(ele => new Workout(ele));
   }
@@ -243,7 +231,7 @@ class Workout {
 
   /** Given a workout id, return details about workout.
    *
-   * Returns { id, swId, name, description, category, scoreType, createDate, modifyDate, movements }
+   * Returns { id, swId, name, description, category, scoreType, createDate, modifyDate, featuredDate, createBy, movements }
    *  where movements is {movementId, movementName, youtubeId}
    *
    * Throws NotFoundError if not found.
@@ -258,6 +246,8 @@ class Workout {
               score_type AS "scoreType", 
               TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
               TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate",
+              TO_CHAR(featured_date, 'YYYYMMDD') AS "featuredDate",
+              create_by AS "createBy"
        FROM workouts
        WHERE id = $1`,
       [id]
@@ -288,7 +278,7 @@ class Workout {
    * Data can include:
    *   { swId, name, description, category, scoreType }
    *
-   * Returns { id, swId, name, description, category, score_type }
+   * Returns { id, swId, name, description, category, scoreType, createDate, modifyDate, featuredDate, createBy }
    *
    * Throws NotFoundError if not found.
    **/
@@ -298,7 +288,7 @@ class Workout {
       name: "wo_name",
       description: "wo_description",
       category: "category",
-      scoreType: "score_type",
+      scoreType: "score_type"
     }
     let {setClause, valuesArr} = buildUpdateQuery(data, jstoSql);
     setClause += `, modify_date=CURRENT_TIMESTAMP `;
@@ -314,7 +304,9 @@ class Workout {
                   category,
                   score_type AS "scoreType", 
                   TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
-                  TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate"`,              
+                  TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate",   
+                  TO_CHAR(featured_date, 'YYYYMMDD') AS "featuredDate"
+                  create_by AS "createBy`,                         
       [...valuesArr, this.id]
     );
 
