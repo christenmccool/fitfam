@@ -47,13 +47,14 @@ CREATE TABLE workouts (
   category text DEFAULT 'custom',
   score_type text,
   create_date timestamp DEFAULT CURRENT_TIMESTAMP,
-  modify_date timestamp
+  modify_date timestamp,
+  create_by integer REFERENCES users ON DELETE CASCADE
 );   
 
 CREATE TABLE postings (
   id serial PRIMARY KEY,
-  family_id integer REFERENCES families ON DELETE CASCADE
-  wo_id integer REFERENCES workouts ON DELETE CASCADE
+  family_id integer REFERENCES families ON DELETE CASCADE,
+  wo_id integer REFERENCES workouts ON DELETE CASCADE,
   create_date timestamp DEFAULT CURRENT_TIMESTAMP,
   modify_date timestamp,
   post_date timestamp DEFAULT CURRENT_TIMESTAMP,

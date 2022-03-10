@@ -25,7 +25,6 @@ class Result {
    *
    * Returns { id, username, familyId, workoutId, score, notes, createDate, completeDate }
    **/
-  // static async create({ userId, familyId, workoutId, score, notes, completeDate }) {
   static async create(data) {
     const jstoSql = {
       userId: "user_id",

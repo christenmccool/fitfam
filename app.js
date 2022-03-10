@@ -14,6 +14,7 @@ const userRoutes = require("./routes/users");
 const famiyRoutes = require("./routes/families");
 const membershipRoutes = require("./routes/memberships");
 const workoutRoutes = require("./routes/workouts");
+const postingRoutes = require("./routes/postings");
 const resultRoutes = require("./routes/results");
 const commentRoutes = require("./routes/comments");
 
@@ -28,6 +29,7 @@ app.use("/users", userRoutes);
 app.use("/families", famiyRoutes);
 app.use("/memberships", membershipRoutes);
 app.use("/workouts", workoutRoutes);
+app.use("/postings", postingRoutes);
 app.use("/results", resultRoutes);
 app.use("/comments", commentRoutes);
 

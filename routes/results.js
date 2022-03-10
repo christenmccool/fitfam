@@ -110,7 +110,7 @@ const resultUpdateSchema = require("../schemas/resultUpdate.json");
  * Data may include:
  *   { score, notes, completeDate }
  *
- * Returns { id, userId, familyId, workoutId, score, notes, createDate, modifyDate, completeDate }
+ * result is { id, userId, familyId, workoutId, score, notes, createDate, modifyDate, completeDate }
  **/
 
  router.patch("/:id", ensureLoggedIn, async function (req, res, next) {

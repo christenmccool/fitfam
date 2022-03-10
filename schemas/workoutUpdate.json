@@ -28,11 +28,6 @@
       "type": "string",
       "minLength": 1,
       "maxLength": 20
-    },
-    "publishDate": {
-      "type": "string",
-      "maxLength": 50,
-      "format": "date"
     }
   },
   "additionalProperties": false

@@ -21,17 +21,16 @@ class Workout {
     this.category = category;
     this.createDate = createDate;
     this.modifyDate = modifyDate;
-    this.publishDate = publishDate;
     this.movements = movements;
   }
 
   /** Create new workout given data, update db, return new workout data
    *    
    * Data may include:
-   *   { swId, name, description, category, scoreType, publishDate }
+   *   { swId, name, description, category, scoreType }
    * data must include at least one property
    *
-   * Returns { id, swId, name, description, category, scoreType, createDate, publishDate }
+   * Returns { id, swId, name, description, category, scoreType, createDate }
    **/
   static async create(data) {
     const jstoSql = {
@@ -40,7 +39,6 @@ class Workout {
       description: "wo_description",
       category: "category",
       scoreType: "score_type",
-      publishDate: "publish_date"
     }
 
     let {insertClause, valuesArr} = buildInsertQuery(data, jstoSql);
@@ -54,8 +52,7 @@ class Workout {
                   wo_description AS description,
                   score_type AS "scoreType",
                   category,
-                  TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
-                  TO_CHAR(publish_date, 'YYYYMMDD') AS "publishDate"`,           
+                  TO_CHAR(create_date, 'YYYYMMDD') AS "createDate"`,           
       [...valuesArr]
     );
 
@@ -69,53 +66,53 @@ class Workout {
    * Returns [ workout1, workout1, ... ]
    * where workout is { id, name, description }
    * */
-   static async findByDate(date) {
-    // Check if the date's workouts are already in the database
-    // If not, call the API and add the date's workouts to the database
+  //  static async findByDate(date) {
+  //   // Check if the date's workouts are already in the database
+  //   // If not, call the API and add the date's workouts to the database
     
-    const res = await db.query(
-      `SELECT id,
-              wo_name AS name
-        FROM workouts
-        WHERE category = 'wod' AND publish_date=$1`,
-        [date]
-    );
+  //   const res = await db.query(
+  //     `SELECT id,
+  //             wo_name AS name
+  //       FROM workouts
+  //       WHERE category = 'wod' AND publish_date=$1`,
+  //       [date]
+  //   );
 
-    let workouts = res.rows;
-    console.log(workouts)
+  //   let workouts = res.rows;
+  //   console.log(workouts)
 
-    if (workouts.length) {
-      return workouts.map(ele => new Workout(ele));
-    } 
+  //   if (workouts.length) {
+  //     return workouts.map(ele => new Workout(ele));
+  //   } 
 
-    let workoutsFromApi = [];
-    const apiRes = await ApiCall.getWorkouts(date);
+  //   let workoutsFromApi = [];
+  //   const apiRes = await ApiCall.getWorkouts(date);
 
-    for (let wo of apiRes) {
-      let woData = {...wo};
-      let movementIds = wo.movementIds;
-      delete woData.movementIds;
-      let newWorkout = await Workout.create(woData);
-      workoutsFromApi.push(newWorkout);
+  //   for (let wo of apiRes) {
+  //     let woData = {...wo};
+  //     let movementIds = wo.movementIds;
+  //     delete woData.movementIds;
+  //     let newWorkout = await Workout.create(woData);
+  //     workoutsFromApi.push(newWorkout);
 
-      //insert workout's movements ids into the db
-      for (let movementId of movementIds) {
-        workouts = await db.query(
-          `INSERT INTO workouts_movements
-            (wo_id, movement_id)
-            VALUES
-            ($1, $2)`,
-            [newWorkout.id, movementId]
-        )
-      }
-    }
+  //     //insert workout's movements ids into the db
+  //     for (let movementId of movementIds) {
+  //       workouts = await db.query(
+  //         `INSERT INTO workouts_movements
+  //           (wo_id, movement_id)
+  //           VALUES
+  //           ($1, $2)`,
+  //           [newWorkout.id, movementId]
+  //       )
+  //     }
+  //   }
 
-    return workoutsFromApi.map(ele => new Workout({id: ele.id, name: ele.name}));
-  }
+  //   return workoutsFromApi.map(ele => new Workout({id: ele.id, name: ele.name}));
+  // }
 
 
   /** Find all workouts matching optional filtering criteria
-   * Filters are swId, name, description, category, publishDate, movementId 
+   * Filters are swId, name, description, category, movementId 
    * Filter 'keyword' is name or description
    *
    * Returns [ workout1, workout1, ... ]
@@ -124,8 +121,8 @@ class Workout {
   static async findAll(data) {
     //If filter data includes publishDate, first ensure that the API workout of the day is in the database
     //If it's not, call the API and add the workout to the database
-    if (data && data.publishDate) {
-      return this.findByDate(data.publishDate);
+    // if (data && data.publishDate) {
+    //   return this.findByDate(data.publishDate);
       // let res = await db.query(
       //   `SELECT id,
       //           wo_name AS name
@@ -153,7 +150,7 @@ class Workout {
       //     }
       //   }
       // }
-    }
+    // }
 
     let dataPartial = {...data};
     delete dataPartial.movementId;
@@ -221,7 +218,7 @@ class Workout {
         JOIN
           workouts w
           ON w.id = i.id
-          ORDER BY publish_date`,
+          ORDER BY wo_name`,
         [...valuesArr]
     );
     // let res = await db.query(
@@ -246,7 +243,7 @@ class Workout {
 
   /** Given a workout id, return details about workout.
    *
-   * Returns { id, swId, name, description, category, scoreType, createDate, modifyDate, publishDate, movements }
+   * Returns { id, swId, name, description, category, scoreType, createDate, modifyDate, movements }
    *  where movements is {movementId, movementName, youtubeId}
    *
    * Throws NotFoundError if not found.
@@ -261,7 +258,6 @@ class Workout {
               score_type AS "scoreType", 
               TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
               TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate",
-              TO_CHAR(publish_date, 'YYYYMMDD') AS "publishDate"
        FROM workouts
        WHERE id = $1`,
       [id]
@@ -290,9 +286,9 @@ class Workout {
   /** Update workout data 
    *
    * Data can include:
-   *   { swId, name, description, category, scoreType, date }
+   *   { swId, name, description, category, scoreType }
    *
-   * Returns { id, swId, name, description, category, score_type, date }
+   * Returns { id, swId, name, description, category, score_type }
    *
    * Throws NotFoundError if not found.
    **/
@@ -303,7 +299,6 @@ class Workout {
       description: "wo_description",
       category: "category",
       scoreType: "score_type",
-      publishDate: "publish_date"
     }
     let {setClause, valuesArr} = buildUpdateQuery(data, jstoSql);
     setClause += `, modify_date=CURRENT_TIMESTAMP `;
@@ -319,8 +314,7 @@ class Workout {
                   category,
                   score_type AS "scoreType", 
                   TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
-                  TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate",
-                  TO_CHAR(publish_date, 'YYYYMMDD') AS "publishDate"`,              
+                  TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate"`,              
       [...valuesArr, this.id]
     );
 

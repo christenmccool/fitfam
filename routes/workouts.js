@@ -19,10 +19,10 @@ const workoutUpdateSchema = require("../schemas/workoutUpdate.json");
 
 /** POST / { data }  => { workout }
  *
- * data may include { swId, name, description, category, scoreType, publishDate }
+ * data may include { swId, name, description, category, scoreType }
  * data must include at least one property
  *  
- * workout is { id, swId, name, description, category, scoreType, createDate, publishDate }
+ * workout is { id, swId, name, description, category, scoreType, createDate }
  **/
  router.post("/", ensureLoggedIn, async function (req, res, next) {
   try {
@@ -51,7 +51,6 @@ const workoutUpdateSchema = require("../schemas/workoutUpdate.json");
  * - description 
  * - category ("girls", "heroes", "games", "wod", "custom")
  * - scoreType
- * - publishDate
  * - movementId
  * 
  * - keyword (name or description)
@@ -84,7 +83,7 @@ router.get("/", async function (req, res, next) {
 /** GET /[id] => { workout }
  * Returns workout details given workout id
  * 
- * workout is { id, swId, name, description, category, scoreType, createDate, modifyDate, publishDate, movements }
+ * workout is { id, swId, name, description, category, scoreType, createDate, modifyDate, movements }
  *    where movements is {movementId, movementName, youtubeId}
  **/
  router.get("/:id", async function (req, res, next) {
@@ -103,9 +102,9 @@ router.get("/", async function (req, res, next) {
 /** PATCH /[id] { data } => { workout }
  *
  * Data can include:
- *   { swId, name, description, category, scoreType, publishDate }
+ *   { swId, name, description, category, scoreType }
  *
- * Returns { id, swId, name, description, category, scoreType, createDate, modifyDate, publishDate }
+ * Returns { id, swId, name, description, category, scoreType, createDate, modifyDate }
  **/
 
  router.patch("/:id", ensureLoggedIn, async function (req, res, next) {
