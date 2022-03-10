@@ -47,17 +47,23 @@ CREATE TABLE workouts (
   category text DEFAULT 'custom',
   score_type text,
   create_date timestamp DEFAULT CURRENT_TIMESTAMP,
-  modify_date timestamp, 
-  publish_date timestamp DEFAULT CURRENT_TIMESTAMP
+  modify_date timestamp
 );   
 
-ALTER SEQUENCE workouts_id_seq RESTART WITH 450;
+CREATE TABLE postings (
+  id serial PRIMARY KEY,
+  family_id integer REFERENCES families ON DELETE CASCADE
+  wo_id integer REFERENCES workouts ON DELETE CASCADE
+  create_date timestamp DEFAULT CURRENT_TIMESTAMP,
+  modify_date timestamp,
+  post_date timestamp DEFAULT CURRENT_TIMESTAMP,
+  post_by integer REFERENCES users ON DELETE CASCADE
+);   
 
 CREATE TABLE results (
   id serial PRIMARY KEY,
+  post_id integer NOT NULL REFERENCES postings ON DELETE CASCADE,
   user_id integer NOT NULL REFERENCES users ON DELETE CASCADE,
-  family_id integer NOT NULL REFERENCES families ON DELETE CASCADE, 
-  workout_id integer NOT NULL REFERENCES workouts ON DELETE CASCADE,
   score integer,
   notes text,
   create_date timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -85,5 +91,3 @@ CREATE TABLE workouts_movements (
   movement_id text REFERENCES movements ON DELETE CASCADE,
   PRIMARY KEY (wo_id, movement_id)
 );   
-
-

@@ -36,7 +36,7 @@ async function getWorkouts(url, prevLength) {
       let i = 0;
       for (let workout of workouts) {
         const workoutData = {
-            id: i + skip + prevLength + 1,
+            // id: i + skip + prevLength + 1,
             sw_id: workout.id,
             wo_name: workout.attributes.name,
             wo_description: workout.attributes.description,
@@ -53,7 +53,8 @@ async function getWorkouts(url, prevLength) {
           }
         })
         for (let id of workoutData.movement_ids) {
-          let workoutData2 = {wo_id: workoutData.id, movement_id: id};
+          // let workoutData2 = {wo_id: workoutData.id, movement_id: id};
+          let workoutData2 = {wo_sw_id: workoutData.sw_id, movement_sw_id: id};
           fs.appendFile('workoutsMovements.json', JSON.stringify(workoutData2) + os.EOL, 'utf8', (err, data) => {
             if (err) {
                 console.log(err);
