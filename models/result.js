@@ -6,11 +6,10 @@ const { NotFoundError } = require("../expressError");
 const { buildInsertQuery, buildSelectQuery, buildUpdateQuery } = require("../utils/sql");
 
 class Result {
-  constructor({ id, userId, familyId, workoutId, score, notes, createDate, modifyDate, completeDate }) {
+  constructor({ id, userId, postId, score, notes, createDate, modifyDate, completeDate }) {
     this.id = id;
     this.userId = userId;
-    this.familyId = familyId;
-    this.workoutId = workoutId;
+    this.postId = postId;
     this.score = score;
     this.notes = notes;
     this.createDate = createDate;
@@ -20,16 +19,15 @@ class Result {
 
   /** Create new result given data, update db, return new result data
    * 
-   * data must include { userId, familyId, workoutId }
+   * data must include { userId, postId }
    * data may include { score, notes, completeDate }
    *
-   * Returns { id, username, familyId, workoutId, score, notes, createDate, completeDate }
+   * Returns { id, username, postId, score, notes, createDate, completeDate }
    **/
   static async create(data) {
     const jstoSql = {
       userId: "user_id",
-      familyId: "family_id",
-      workoutId: "workout_id",
+      postId: "post_id",
       score: "score",
       notes: "notes",
       completeDate: "complete_date"
@@ -42,8 +40,7 @@ class Result {
         ${insertClause}
         RETURNING id,
                   user_id AS "userId",
-                  family_id AS "familyId",
-                  workout_id AS "workoutId", 
+                  post_id AS "postId",
                   score, 
                   notes,
                   TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
@@ -57,24 +54,22 @@ class Result {
   }
   
   /** Find all results matching optional filtering criteria
-   * Filters are workoutId, userId, familyId, score, notes
+   * Filters are postId, userId, score, notes
    *
    * Returns [ resutl1, result2, ... ]
-   * where result is { id, userId, familyId, workoutId, score, notes, completeDate }
+   * where result is { id, userId, postId, score, notes, completeDate }
    * */
   static async findAll(data) {
     const jstoSql = {
       userId: "user_id",
-      familyId: "family_id",
-      workoutId: "workout_id",
+      postId: "post_id",
       score: "score",
       notes: "notes"
     }
 
     const compOp = {
       userId: "=",
-      familyId: "=",
-      workoutId: "=",
+      postId: "=",
       score: "=",
       notes: "ILIKE"
     }
@@ -84,8 +79,7 @@ class Result {
     let res = await db.query(
       `SELECT id,
               user_id AS "userId",
-              family_id AS "familyId",
-              workout_id AS "workoutId", 
+              post_id AS "postId",
               score, 
               notes,
               TO_CHAR(complete_date, 'YYYYMMDD') AS "completeDate"
@@ -100,7 +94,7 @@ class Result {
   
   /** Return data about a workout result given result id
    *
-   * Returns { id, userId, familyId, workoutId, score, notes, createDate, modifyDate, completeDate }
+   * Returns { id, userId, postId, score, notes, createDate, modifyDate, completeDate }
    *
    * Throws NotFoundError if not found.
    **/
@@ -108,8 +102,7 @@ class Result {
     const res = await db.query(
       `SELECT id,
               user_id AS "userId", 
-              family_id AS "familyId",
-              workout_id AS "workoutId", 
+              post_id AS "postId",
               score, 
               notes,
               TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
@@ -131,7 +124,7 @@ class Result {
    * Data may include:
    *   { score, notes, completeDate }
    *
-   * Returns { id, userId, familyId, workoutId, score, notes, createDate, modifyDate, completeDate }
+   * Returns { id, userId, postId, score, notes, createDate, modifyDate, completeDate }
    *
    * Throws NotFoundError if not found.
    */
@@ -151,8 +144,7 @@ class Result {
         WHERE id = $${valuesArr.length + 1}
         RETURNING id,
                   user_id AS "userId", 
-                  family_id AS "familyId",
-                  workout_id AS "workoutId", 
+                  post_id AS "postId",
                   score, 
                   notes,
                   TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",

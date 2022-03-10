@@ -6,10 +6,7 @@
     "userId": {
       "type": "integer"
     },
-    "familyId": {
-      "type": "integer"
-    },
-    "workoutId": {
+    "postId": {
       "type": "integer"
     },
     "score": {

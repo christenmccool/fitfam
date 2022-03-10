@@ -31,18 +31,16 @@ const postingUpdateSchema = require("../schemas/postingUpdate.json");
       throw new BadRequestError(errs);
     }
 
+    //user may only post as themselves
     const {postBy} = req.body;
-    if (postBy) {
-      //user may only post as themselves
-      if (!(res.locals.user.userId === postBy)) {
-        throw new ForbiddenError(`A user can only post as themselves`);
-      }
-      //user may only post to a family they are a member of
-      const {familyId} = req.body;
-      const isMember = await verifyMembership(postBy, familyId);
-      if (!res.locals.user.isAdmin && !isMember) {
-        throw new ForbiddenError(`User can only post to own families`);
-      }
+    if (postBy && !(res.locals.user.userId === postBy)) {
+      throw new ForbiddenError(`A user can only post as themselves`);
+    }
+    //user may only post to a family they are a member of
+    const {familyId} = req.body;
+    const isMember = await verifyMembership(res.locals.user.userId, familyId);
+    if (!res.locals.user.isAdmin && !isMember) {
+      throw new ForbiddenError(`User can only post to own families`);
     }
 
     const posting = await Posting.create(req.body);

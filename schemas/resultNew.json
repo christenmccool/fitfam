@@ -4,17 +4,13 @@
   "type": "object",
   "required": [
     "userId", 
-    "familyId", 
-    "workoutId"
+    "postId"
   ],
   "properties": {
     "userId": {
       "type": "integer"
     },
-    "familyId": {
-      "type": "integer"
-    },
-    "workoutId": {
+    "postId": {
       "type": "integer"
     },
     "score": {
