@@ -21,7 +21,7 @@ const postingUpdateSchema = require("../schemas/postingUpdate.json");
  * data must include { familyId, workoutId }
  * data may include { postDate, postBy }
  * 
- * posting is { id, familyId, workoutId, createDate, postDate, postBy, woName, woDescription }
+ * posting is { id, familyId, workoutId, createDate, postDate, postBy, woName, woDescription, woScoreType }
  **/
  router.post("/", ensureLoggedIn, async function (req, res, next) {
   try {
@@ -60,7 +60,7 @@ const postingUpdateSchema = require("../schemas/postingUpdate.json");
  * - postDate
  * - postBy
  * 
- * posting is { id, familyId, workoutId, postDate, postBy, woName, woDescription }
+ * posting is { id, familyId, workoutId, postDate, postBy, woName, woDescription, woScoreType }
  **/
  router.get("/", ensureLoggedIn, async function (req, res, next) {
   try {  
@@ -87,7 +87,7 @@ const postingUpdateSchema = require("../schemas/postingUpdate.json");
 /** GET /[id] => { posting }
  * Returns posting data given posting id
  * 
- * posting is { id, familyId, workoutId, createDate, modifyDate, postDate, postBy, woName, woDescription }
+ * posting is { id, familyId, workoutId, createDate, modifyDate, postDate, postBy, woName, woDescription, woScoreType }
  **/
  router.get("/:id", ensureLoggedIn, async function (req, res, next) {
   try {  
@@ -107,7 +107,7 @@ const postingUpdateSchema = require("../schemas/postingUpdate.json");
  * Data may include:
  *   { postDate }
  *
- * posting is { id, familyId, workoutId, createDate, modifyDate, postDate, postBy }
+ * posting is { id, familyId, workoutId, createDate, modifyDate, postDate, postBy, woName, woDescription, woScoreType }
  **/
 
  router.patch("/:id", ensureLoggedIn, async function (req, res, next) {

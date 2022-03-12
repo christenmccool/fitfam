@@ -6,7 +6,7 @@ const { NotFoundError } = require("../expressError");
 const { buildInsertQuery, buildSelectQuery, buildUpdateQuery } = require("../utils/sql");
 
 class Posting {
-  constructor({ id, familyId, workoutId, createDate, modifyDate, postDate, postBy, woName, woDescription }) {
+  constructor({ id, familyId, workoutId, createDate, modifyDate, postDate, postBy, woName, woDescription, woScoreType }) {
     this.id = id;
     this.familyId = familyId;
     this.workoutId = workoutId;
@@ -16,6 +16,7 @@ class Posting {
     this.postBy = postBy;
     this.woName = woName;
     this.woDescription = woDescription;
+    this.woScoreType = woScoreType;
   }
 
   /** Create new posting given data, update db, return new posting data
@@ -23,7 +24,7 @@ class Posting {
    * data must include { familyId, workoutId }
    * data may include { postDate, postBy }
    *
-   * Returns { id, familyId, workoutId, createDate, postDate, postBy, woName, woDescription }
+   * Returns { id, familyId, workoutId, createDate, postDate, postBy, woName, woDescription, woScoreType }
    **/
   static async create(data) {
     const jstoSql = {
@@ -50,8 +51,10 @@ class Posting {
                inserted_posting.wo_id AS "workoutId", 
                TO_CHAR(inserted_posting.create_date, 'YYYYMMDD') AS "createDate",
                TO_CHAR(inserted_posting.post_date, 'YYYYMMDD') AS "postDate",
+               inserted_posting.post_by AS "postBy"
                w.wo_name AS "woName", 
-               w.wo_description AS "woDescription" 
+               w.wo_description AS "woDescription",
+               w.score_type AS "woScoreType"  
         FROM inserted_posting 
         JOIN workouts w 
           ON w.id=inserted_posting.wo_id`,                
@@ -63,11 +66,11 @@ class Posting {
     return new Posting(posting);  
   }
   
-  /** Find all results matching optional filtering criteria
+  /** Find all posting matching optional filtering criteria
    * Filters are workoutId, userId, familyId, score, notes
    *
-   * Returns [ resutl1, result2, ... ]
-   * where result is { id, userId, familyId, workoutId, score, notes, completeDate, workoutName }
+   * Returns [ posting1, posting2, ... ]
+   * where posting is { id, familyId, workoutId, createDate, postDate, postBy, woName, woDescription, woScoreType }
    * */
   static async findAll(data) {
     const jstoSql = {
@@ -92,6 +95,7 @@ class Posting {
           p.wo_id AS "workoutId", 
           w.wo_name AS "woName", 
           w.wo_description AS "woDescription", 
+          w.score_type AS "woScoreType", 
           TO_CHAR(p.post_date, 'YYYYMMDD') AS "postDate",
           p.post_by AS "postBy"
         FROM postings p
@@ -107,7 +111,7 @@ class Posting {
   
   /** Return data about a posting given posting id
    *
-   * Returns { id, familyId, workoutId, createDate, modifyDate, postDate, postBy, woName, woDescription }
+   * Returns { id, familyId, workoutId, createDate, modifyDate, postDate, postBy, woName, woDescription, woScoreType }
    *
    * Throws NotFoundError if not found.
    **/
@@ -118,6 +122,9 @@ class Posting {
         p.wo_id AS "workoutId", 
         w.wo_name AS "woName", 
         w.wo_description AS "woDescription", 
+        w.score_type AS "woScoreType", 
+        TO_CHAR(p.create_date, 'YYYYMMDD') AS "createDate",
+        TO_CHAR(p.modify_date, 'YYYYMMDD') AS "modifyDate",
         TO_CHAR(p.post_date, 'YYYYMMDD') AS "postDate",
         p.post_by AS "postBy"
       FROM postings p
@@ -151,16 +158,30 @@ class Posting {
     setClause += `, modify_date=CURRENT_TIMESTAMP `;
 
     const res = await db.query(
-      `UPDATE postings 
-        ${setClause}
-        WHERE id = $${valuesArr.length + 1}
-        RETURNING id,
-                  family_id AS "familyId",
-                  wo_id AS "workoutId", 
-                  TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
-                  TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate",
-                  TO_CHAR(post_date, 'YYYYMMDD') AS "postDate",
-                  post_by AS "postBy"`,              
+      `WITH updated_posting AS 
+        (UPDATE postings 
+          ${setClause}
+          WHERE id = $${valuesArr.length + 1}
+          RETURNING id,
+                    family_id,
+                    wo_id, 
+                    create_date,
+                    modify_date,
+                    post_date,
+                    post_by )
+        SELECT updated_posting.id, 
+               updated_posting.family_id AS "familyId", 
+               updated_posting.wo_id AS "workoutId", 
+               TO_CHAR(updated_posting.create_date, 'YYYYMMDD') AS "createDate",
+               TO_CHAR(updated_posting.modify_date, 'YYYYMMDD') AS "modifyDate",
+               TO_CHAR(updated_posting.post_date, 'YYYYMMDD') AS "postDate",
+               updated_posting.post_by AS "postBy", 
+               w.wo_name AS "woName", 
+               w.wo_description AS "woDescription",
+               w.score_type AS "woScoreType"  
+        FROM updated_posting 
+        JOIN workouts w 
+          ON w.id=updated_posting.wo_id`,                
       [...valuesArr, this.id]
     );
 

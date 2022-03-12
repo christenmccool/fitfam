@@ -20,7 +20,7 @@ const resultUpdateSchema = require("../schemas/resultUpdate.json");
  * data must include { userId, postId }
  * data may include { score, notes }
  * 
- * result is { id, userId, postId, score, notes, createDate, completeDate }
+ * result is { id, userId, postId, score, notes, createDate, completeDate, userFirst, userLast }
  **/
  router.post("/", ensureLoggedIn, async function (req, res, next) {
   try {
@@ -53,13 +53,13 @@ const resultUpdateSchema = require("../schemas/resultUpdate.json");
  * - score
  * - notes
  * 
- * result is { id, userId, postId, score, notes, completeDate }
+ * result is { id, userId, postId, score, notes, completeDate, userFirst, userLast }
  **/
  router.get("/", ensureLoggedIn, async function (req, res, next) {
   try {  
     const query = req.query;
     if (query.userId !== undefined) query.userId = +query.userId;
-    if (query.postId !== undefined) query.familyId = +query.postId;
+    if (query.postId !== undefined) query.postId = +query.postId;
     if (query.score !== undefined) query.score = +query.score;
 
     const validator = jsonschema.validate(query, resultSearchSchema);
@@ -80,7 +80,7 @@ const resultUpdateSchema = require("../schemas/resultUpdate.json");
 /** GET /[id] => { result }
  * Returns workout result data given result id
  * 
- * result is { id, userId, postId, score, notes, createDate, modifyDate, completeDate }
+ * result is { id, userId, postId, score, notes, createDate, modifyDate, completeDate, userFirst, userLast }
  **/
  router.get("/:id", ensureLoggedIn, async function (req, res, next) {
   try {  
@@ -100,7 +100,7 @@ const resultUpdateSchema = require("../schemas/resultUpdate.json");
  * Data may include:
  *   { score, notes, completeDate }
  *
- * result is { id, userId, postId, score, notes, createDate, modifyDate, completeDate }
+ * result is { id, userId, postId, score, notes, createDate, modifyDate, completeDate, userFirst, userLast }
  **/
 
  router.patch("/:id", ensureLoggedIn, async function (req, res, next) {

@@ -8,11 +8,11 @@
     VALUES ('mcbragren'),
            ('workteam');
   
-  INSERT INTO users_families (user_id, family_id)
-    VALUES (1,1),
-           (2,1),
-           (1,2),
-           (3,2);
+  INSERT INTO users_families (user_id, family_id, primary_family)
+    VALUES (1,1, true),
+           (2,1, true),
+           (1,2, false),
+           (3,2, true);
   
   
   -- INSERT INTO results (user_id, family_id, workout_id, score, notes)

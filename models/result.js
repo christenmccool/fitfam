@@ -6,7 +6,7 @@ const { NotFoundError } = require("../expressError");
 const { buildInsertQuery, buildSelectQuery, buildUpdateQuery } = require("../utils/sql");
 
 class Result {
-  constructor({ id, userId, postId, score, notes, createDate, modifyDate, completeDate }) {
+  constructor({ id, userId, postId, score, notes, createDate, modifyDate, completeDate, userFirst, userLast }) {
     this.id = id;
     this.userId = userId;
     this.postId = postId;
@@ -15,6 +15,8 @@ class Result {
     this.createDate = createDate;
     this.modifyDate = modifyDate;
     this.completeDate = completeDate;
+    this.userFirst = userFirst;
+    this.userLast = userLast;
   }
 
   /** Create new result given data, update db, return new result data
@@ -22,7 +24,7 @@ class Result {
    * data must include { userId, postId }
    * data may include { score, notes, completeDate }
    *
-   * Returns { id, username, postId, score, notes, createDate, completeDate }
+   * Returns { id, username, postId, score, notes, createDate, completeDate, userFirst, userLast }
    **/
   static async create(data) {
     const jstoSql = {
@@ -36,15 +38,28 @@ class Result {
     let {insertClause, valuesArr} = buildInsertQuery(data, jstoSql);
 
     const res = await db.query(
-      `INSERT INTO results 
-        ${insertClause}
-        RETURNING id,
-                  user_id AS "userId",
-                  post_id AS "postId",
-                  score, 
-                  notes,
-                  TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
-                  TO_CHAR(complete_date, 'YYYYMMDD') AS "completeDate"`,        
+      `WITH inserted_result AS 
+        (INSERT INTO results 
+          ${insertClause}
+          RETURNING id,
+                    user_id,
+                    post_id, 
+                    score,
+                    notes,
+                    create_date,
+                    complete_date )
+        SELECT inserted_result.id, 
+               inserted_result.user_id AS "userId", 
+               inserted_result.post_id AS "postId", 
+               inserted_result.score, 
+               inserted_result.notes, 
+               TO_CHAR(inserted_result.create_date, 'YYYYMMDD') AS "createDate",
+               TO_CHAR(inserted_result.complete_date, 'YYYYMMDD') AS "completeDate",
+               u.first_name AS "userFirst", 
+               u.last_name AS "userLast"
+        FROM inserted_result 
+        JOIN users u 
+          ON u.id=inserted_result.user_id`,                
       [...valuesArr]
     );
 
@@ -57,7 +72,7 @@ class Result {
    * Filters are postId, userId, score, notes
    *
    * Returns [ resutl1, result2, ... ]
-   * where result is { id, userId, postId, score, notes, completeDate }
+   * where result is { id, userId, postId, score, notes, completeDate, userFirst, userLast }
    * */
   static async findAll(data) {
     const jstoSql = {
@@ -77,13 +92,17 @@ class Result {
     let {whereClause, valuesArr} = buildSelectQuery(data, jstoSql, compOp);
 
     let res = await db.query(
-      `SELECT id,
-              user_id AS "userId",
-              post_id AS "postId",
-              score, 
-              notes,
-              TO_CHAR(complete_date, 'YYYYMMDD') AS "completeDate"
-        FROM results
+      `SELECT r.id,
+              r.user_id AS "userId",
+              r.post_id AS "postId",
+              r.score, 
+              r.notes,
+              TO_CHAR(r.complete_date, 'YYYYMMDD') AS "completeDate",
+              u.first_name as "userFirst",
+              u.last_name as "userLast"
+        FROM results r
+        JOIN users u
+          ON u.id = r.user_id
         ${whereClause}
         ORDER BY id`,
         [...valuesArr]
@@ -94,22 +113,26 @@ class Result {
   
   /** Return data about a workout result given result id
    *
-   * Returns { id, userId, postId, score, notes, createDate, modifyDate, completeDate }
+   * Returns { id, userId, postId, score, notes, createDate, modifyDate, completeDate, userFirst, userLast }
    *
    * Throws NotFoundError if not found.
    **/
   static async find(id) {
     const res = await db.query(
-      `SELECT id,
-              user_id AS "userId", 
-              post_id AS "postId",
-              score, 
-              notes,
-              TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
-              TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate",
-              TO_CHAR(complete_date, 'YYYYMMDD') AS "completeDate"
-        FROM results
-        WHERE id = $1`,
+      `SELECT r.id,
+              r.user_id AS "userId",
+              r.post_id AS "postId",
+              r.score, 
+              r.notes,
+              TO_CHAR(r.complete_date, 'YYYYMMDD') AS "completeDate",
+              TO_CHAR(r.modify_date, 'YYYYMMDD') AS "modifyDate",
+              TO_CHAR(r.complete_date, 'YYYYMMDD') AS "completeDate",
+              u.first_name as "userFirst",
+              u.last_name as "userLast"
+        FROM results r
+        JOIN users u
+          ON u.id = r.user_id
+        WHERE r.id = $1`,
         [id]
     );
   
@@ -124,7 +147,7 @@ class Result {
    * Data may include:
    *   { score, notes, completeDate }
    *
-   * Returns { id, userId, postId, score, notes, createDate, modifyDate, completeDate }
+   * Returns { id, userId, postId, score, notes, createDate, modifyDate, completeDate, userFirst, userLast }
    *
    * Throws NotFoundError if not found.
    */
@@ -139,19 +162,33 @@ class Result {
     setClause += `, modify_date=CURRENT_TIMESTAMP `;
 
     const res = await db.query(
-      `UPDATE results 
-        ${setClause}
-        WHERE id = $${valuesArr.length + 1}
-        RETURNING id,
-                  user_id AS "userId", 
-                  post_id AS "postId",
-                  score, 
-                  notes,
-                  TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
-                  TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate",
-                  TO_CHAR(complete_date, 'YYYYMMDD') AS "completeDate"`,              
+      `WITH updated_result AS 
+        (UPDATE results 
+          ${setClause}
+          WHERE id = $${valuesArr.length + 1}
+          RETURNING id,
+                    user_id, 
+                    post_id,
+                    score, 
+                    notes,
+                    create_date,
+                    modify_date,
+                    complete_date )
+        SELECT updated_result.id, 
+              updated_result.user_id AS "userId", 
+              updated_result.post_id AS "postId", 
+              updated_result.score, 
+              updated_result.notes, 
+              TO_CHAR(updated_result.create_date, 'YYYYMMDD') AS "createDate",
+              TO_CHAR(updated_result.modify_date, 'YYYYMMDD') AS "modifyDate",
+              TO_CHAR(updated_result.complete_date, 'YYYYMMDD') AS "completeDate",
+              u.first_name AS "userFirst", 
+              u.last_name AS "userLast"
+        FROM updated_result 
+        JOIN users u 
+          ON u.id=updated_result.user_id`, 
       [...valuesArr, this.id]
-    );
+      );   
 
     const result = res.rows[0];
 
