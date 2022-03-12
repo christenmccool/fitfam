@@ -69,7 +69,7 @@ class Result {
   }
   
   /** Find all results matching optional filtering criteria
-   * Filters are postId, userId, score, notes
+   * Filters are postId, userId, notes
    *
    * Returns [ resutl1, result2, ... ]
    * where result is { id, userId, postId, score, notes, completeDate, userFirst, userLast }

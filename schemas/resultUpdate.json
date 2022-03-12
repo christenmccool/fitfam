@@ -5,7 +5,7 @@
   "minProperties": 1,
   "properties": {
     "score": {
-      "type": "integer"
+      "type": "object"
     },
     "notes": {
       "type": "string",

@@ -50,7 +50,6 @@ const resultUpdateSchema = require("../schemas/resultUpdate.json");
  * Search filters:
  * - postId
  * - userId
- * - score
  * - notes
  * 
  * result is { id, userId, postId, score, notes, completeDate, userFirst, userLast }

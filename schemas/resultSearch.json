@@ -9,9 +9,6 @@
     "postId": {
       "type": "integer"
     },
-    "score": {
-      "type": "integer"
-    },
     "notes": {
       "type": "string",
       "minLength": 1,

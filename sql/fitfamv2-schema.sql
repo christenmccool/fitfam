@@ -66,7 +66,7 @@ CREATE TABLE results (
   id serial PRIMARY KEY,
   post_id integer NOT NULL REFERENCES postings ON DELETE CASCADE,
   user_id integer NOT NULL REFERENCES users ON DELETE CASCADE,
-  score integer,
+  score json,
   notes text,
   create_date timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
   modify_date timestamp,
