@@ -51,7 +51,7 @@ class Posting {
                inserted_posting.wo_id AS "workoutId", 
                TO_CHAR(inserted_posting.create_date, 'YYYYMMDD') AS "createDate",
                TO_CHAR(inserted_posting.post_date, 'YYYYMMDD') AS "postDate",
-               inserted_posting.post_by AS "postBy"
+               inserted_posting.post_by AS "postBy",
                w.wo_name AS "woName", 
                w.wo_description AS "woDescription",
                w.score_type AS "woScoreType"  
