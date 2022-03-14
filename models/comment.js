@@ -6,32 +6,46 @@ const { NotFoundError } = require("../expressError");
 const { buildSelectQuery, buildUpdateQuery } = require("../utils/sql");
 
 class Comment {
-  constructor({ id, resultId, userId, content, createDate, modifyDate }) {
+  constructor({ id, resultId, userId, content, createDate, modifyDate, userFirst, userLast }) {
     this.id = id;
     this.resultId = resultId;
     this.userId = userId;
     this.content = content;
     this.createDate = createDate;
     this.modifyDate = modifyDate;
+    this.userFirst = userFirst;
+    this.userLast = userLast;
   }
 
   /** Create new comment given data, update db, return new comment data
    * 
    * data must include { resultId, userId, content }
    *
-   * Returns { id, resultId, userId, content, createDate }
+   * Returns { id, resultId, userId, content, createDate, userFirst, userLast }
    **/
   // static async create({ resultId, userId, content }) {
   static async create({ resultId, userId, content }) {
+
     const res = await db.query(
-      `INSERT INTO comments 
-        (result_id, user_id, content)
-        VALUES ($1, $2, $3)
-        RETURNING id,
-                  result_id AS "resultId",
-                  user_id AS "userId",
-                  content,
-                  TO_CHAR(create_date, 'YYYYMMDD') AS "createDate"`,
+      `WITH inserted_comment AS 
+        (INSERT INTO comments 
+          (result_id, user_id, content)
+          VALUES ($1, $2, $3)
+          RETURNING id,
+                    user_id,
+                    result_id, 
+                    content,
+                    create_date )
+        SELECT inserted_comment.id, 
+               inserted_comment.user_id AS "userId", 
+               inserted_comment.result_id AS "resultId", 
+               inserted_comment.content, 
+               TO_CHAR(inserted_comment.create_date, 'YYYYMMDD') AS "createDate",
+               u.first_name AS "userFirst", 
+               u.last_name AS "userLast"
+        FROM inserted_comment 
+        JOIN users u 
+          ON u.id=inserted_comment.user_id`,                
       [resultId, userId, content]
     );
 
@@ -63,17 +77,22 @@ class Comment {
   let {whereClause, valuesArr} = buildSelectQuery(data, jstoSql, compOp);
 
   let res = await db.query(
-    `SELECT id, 
-            result_id AS "resultId", 
-            user_id AS "userId",
-            content, 
-            TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
-            TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate"
-      FROM comments
+    `SELECT c.id,
+            c.result_id AS "resultId",
+            c.user_id AS "userId",
+            c.content, 
+            TO_CHAR(c.create_date, 'YYYYMMDD') AS "createDate",
+            TO_CHAR(c.modify_date, 'YYYYMMDD') AS "modifyDate",
+            u.first_name as "userFirst",
+            u.last_name as "userLast"
+      FROM comments c
+      JOIN users u
+        ON u.id = c.user_id
       ${whereClause}
       ORDER BY id`,
       [...valuesArr]
   );
+
     
     return res.rows.map(ele => new Comment(ele));
   }
@@ -86,16 +105,21 @@ class Comment {
    **/
   static async find(id) {
     const res = await db.query(
-      `SELECT id,
-              result_id AS "resultId", 
-              user_id AS "userId",
-              content, 
-              TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
-              TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate"
-        FROM comments
-        WHERE id = $1`,
+      `SELECT c.id,
+              c.result_id AS "resultId",
+              c.user_id AS "userId",
+              c.content, 
+              TO_CHAR(c.create_date, 'YYYYMMDD') AS "createDate",
+              TO_CHAR(c.modify_date, 'YYYYMMDD') AS "modifyDate",
+              u.first_name as "userFirst",
+              u.last_name as "userLast"
+        FROM comments c
+        JOIN users u
+          ON u.id = c.user_id
+        WHERE c.id = $1`,
         [id]
     );
+  
   
     const comment = res.rows[0];
     if (!comment) throw new NotFoundError(`No comment: ${id}`);
@@ -118,18 +142,43 @@ class Comment {
     let {setClause, valuesArr} = buildUpdateQuery(data, jstoSql);
     setClause += `, modify_date=CURRENT_TIMESTAMP `;
 
+    // const res = await db.query(
+    //   `UPDATE comments 
+    //     ${setClause}
+    //     WHERE id = $${valuesArr.length + 1}
+    //     RETURNING id,
+    //               result_id AS "resultId", 
+    //               user_id AS "userId",
+    //               content, 
+    //               TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
+    //               TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate"`,              
+    //   [...valuesArr, this.id]
+    // );
+
     const res = await db.query(
-      `UPDATE comments 
-        ${setClause}
-        WHERE id = $${valuesArr.length + 1}
-        RETURNING id,
-                  result_id AS "resultId", 
-                  user_id AS "userId",
-                  content, 
-                  TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
-                  TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate"`,              
+      `WITH updated_comment AS 
+        (UPDATE comments 
+          ${setClause}
+          WHERE id = $${valuesArr.length + 1}
+          RETURNING id,
+                    user_id, 
+                    result_id,
+                    content,
+                    create_date,
+                    modify_date )
+        SELECT updated_comment.id, 
+               updated_comment.user_id AS "userId", 
+               updated_comment.result_id AS "resultId", 
+               updated_comment.content, 
+               TO_CHAR(updated_comment.create_date, 'YYYYMMDD') AS "createDate",
+               TO_CHAR(updated_comment.modify_date, 'YYYYMMDD') AS "modifyDate",
+               u.first_name AS "userFirst", 
+               u.last_name AS "userLast"
+        FROM updated_comment 
+        JOIN users u 
+          ON u.id=updated_comment.user_id`, 
       [...valuesArr, this.id]
-    );
+      );   
 
     const comment = res.rows[0];
 

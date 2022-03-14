@@ -20,7 +20,7 @@ const commentUpdateSchema = require("../schemas/commentUpdate.json");
  *
  * data must include { resultId, userId, content }
  * 
- * comment is { id, resultId, userId, content, createDate }
+ * comment is { id, resultId, userId, content, createDate, userFirst, userLast }
  **/
  router.post("/", ensureLoggedIn, async function (req, res, next) {
   try {    
@@ -47,7 +47,7 @@ const commentUpdateSchema = require("../schemas/commentUpdate.json");
  * - userId
  * - content
  * 
- * comment is { id, resultId, userId, content, createDate, modifyDate }
+ * comment is { id, resultId, userId, content, createDate, modifyDate, userFirst, userLast }
  **/
  router.get("/", ensureLoggedIn, async function (req, res, next) {
   try {  
@@ -62,7 +62,6 @@ const commentUpdateSchema = require("../schemas/commentUpdate.json");
     }
 
     const comments = await Comment.findAll(query);
-
     return res.json({ comments });
   } catch (err) {
     return next(err);
@@ -73,7 +72,7 @@ const commentUpdateSchema = require("../schemas/commentUpdate.json");
 /** GET /[id] => { comment }
  * Returns comment data given comment id
  * 
- * comment is { id, resultId, userId, content, createDate, modifyDate }
+ * comment is { id, resultId, userId, content, createDate, modifyDate, userFirst, userLast }
  **/
  router.get("/:id", ensureLoggedIn, async function (req, res, next) {
   try {  
@@ -93,7 +92,7 @@ const commentUpdateSchema = require("../schemas/commentUpdate.json");
  * Data must include:
  *   { content }
  *
- * Returns { id, resultId, userId, content, createDate, modifyDate }
+ * Returns { id, resultId, userId, content, createDate, modifyDate, userFirst, userLast }
  **/
 
  router.patch("/:id", ensureLoggedIn, async function (req, res, next) {
