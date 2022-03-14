@@ -59,7 +59,7 @@ class Comment {
    * Filters are resultId, userId, content
    *
    * Returns [ comment1, comment2, ... ]
-   * where result is { id, resultId, userId, content, createDate, modifyDate }
+   * where comment is { id, resultId, userId, content, createDate, modifyDate, userFirst, userLast }
    * */
    static async findAll(data) {
     const jstoSql = {
@@ -99,7 +99,7 @@ class Comment {
   
   /** Return data about a comment given comment id
    *
-   * Returns { id, resultId, userId, content, createDate, modifyDate }
+   * Returns { id, resultId, userId, content, createDate, modifyDate, userFirst, userLast }
    *
    * Throws NotFoundError if not found.
    **/
@@ -131,7 +131,7 @@ class Comment {
    *
    * Data must include: { content }
    *
-   * Returns { id, resultId, userId, content, createDate, modifyDate }
+   * Returns { id, resultId, userId, content, createDate, modifyDate, userFirst, userLast }
    *
    * Throws NotFoundError if not found.
    */
@@ -141,19 +141,6 @@ class Comment {
     }
     let {setClause, valuesArr} = buildUpdateQuery(data, jstoSql);
     setClause += `, modify_date=CURRENT_TIMESTAMP `;
-
-    // const res = await db.query(
-    //   `UPDATE comments 
-    //     ${setClause}
-    //     WHERE id = $${valuesArr.length + 1}
-    //     RETURNING id,
-    //               result_id AS "resultId", 
-    //               user_id AS "userId",
-    //               content, 
-    //               TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
-    //               TO_CHAR(modify_date, 'YYYYMMDD') AS "modifyDate"`,              
-    //   [...valuesArr, this.id]
-    // );
 
     const res = await db.query(
       `WITH updated_comment AS 
