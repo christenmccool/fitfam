@@ -19,7 +19,7 @@ const familyUpdateSchema = require("../schemas/familyUpdate.json");
 
 /** POST / { data }  => { family }
  *
- * data must include { familyName }
+ * data must include { familyName, joinCode }
  * data may include { imageUrl, bio }
  * 
  * family is { id, familyname, imageUrl, bio, createDate }
@@ -47,7 +47,7 @@ const familyUpdateSchema = require("../schemas/familyUpdate.json");
  * - familyName
  * - bio (keyword match)
  * 
- * family is { id, familyName, image_url, bio }
+ * family is { id, familyName, joinCode, image_url, bio }
  **/
  router.get("/", ensureLoggedIn, async function (req, res, next) {
   try {  
@@ -69,7 +69,7 @@ const familyUpdateSchema = require("../schemas/familyUpdate.json");
 /** GET /[familyId] => { family }
  * Returns family data given family id
  * 
- * family is id, familyName, imageUrl, bio, createDate, modifyDate, users }
+ * family is id, familyName, joinCode, imageUrl, bio, createDate, modifyDate, users }
  * 
  * users is [ user1, user2, ... } ]
  *    where user is { userId, firstName, lastName }
@@ -97,7 +97,7 @@ const familyUpdateSchema = require("../schemas/familyUpdate.json");
  * Data can include:
  *   { familyName, imageUrl, bio }
  *
- * Returns { id, familyName, imageUrl, bio, createDate, modifyDate }
+ * Returns { id, familyName, joinCode, imageUrl, bio, createDate, modifyDate }
  **/
  router.patch("/:familyId", ensureLoggedIn, async function (req, res, next) {
   try {

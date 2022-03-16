@@ -6,9 +6,10 @@ const { NotFoundError } = require("../expressError");
 const { buildInsertQuery, buildSelectQuery, buildUpdateQuery } = require("../utils/sql");
 
 class Family {
-  constructor({ id, familyName, imageUrl, bio, createDate, modifyDate, users }) {
+  constructor({ id, familyName, joinCode, imageUrl, bio, createDate, modifyDate, users }) {
     this.id = id;
     this.familyName = familyName;
+    this.joinCode = joinCode;
     this.imageUrl = imageUrl;
     this.bio = bio;
     this.createDate = createDate;
@@ -26,6 +27,7 @@ class Family {
   static async create(data) {
     const jstoSql = {
       familyName: "family_name",
+      joinCode: "join_code",
       imageUrl: "image_url",
       bio: "bio"
     }
@@ -37,6 +39,7 @@ class Family {
         ${insertClause}
         RETURNING id, 
                   family_name AS "familyName", 
+                  join_code AS "joinCode", 
                   image_url AS "imageUrl", 
                   bio,                   
                   TO_CHAR(create_date, 'YYYYMMDD') AS "createDate"`,           
@@ -53,16 +56,18 @@ class Family {
    * Filters are familyName and bio
    *
    * Returns [ family1, family2, ... ]
-   * where family is { id, familyName, imageUrl, bio }
+   * where family is { id, familyName, joinCode, imageUrl, bio }
    **/
   static async findAll(data) {
     const jstoSql = {
       familyName: "family_name",
+      joinCode: "join_code",
       bio: "bio"
     }
 
     const compOp = {
       familyName: "ILIKE",
+      joinCode: "=",
       bio: "ILIKE"
     }
 
@@ -71,6 +76,7 @@ class Family {
     const res = await db.query(
       `SELECT id, 
               family_name AS "familyName", 
+              join_code AS "joinCode", 
               image_url AS "imageUrl", 
               bio 
         FROM families
@@ -84,7 +90,7 @@ class Family {
 
   /** Given a family id, return data about family
    *
-   * Returns { id, familyName, imageUrl, bio, createDate, modifyDate, users }
+   * Returns { id, familyName, joinCode, imageUrl, bio, createDate, modifyDate, users }
    * users is [ user1, user2, ... } ]
    *    where user is { userId, firstName, lastName }
    *
@@ -94,6 +100,7 @@ class Family {
     const res = await db.query(
       `SELECT id, 
               family_name AS "familyName", 
+              join_code AS "joinCode", 
               image_url AS "imageUrl", 
               bio, 
               TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",
@@ -128,7 +135,7 @@ class Family {
    * Data may include:
    *   { familyName, imageUrl, bio }
    *
-   * Returns { id, familyName, imageUrl, bio, createDate, modifyDate }
+   * Returns { id, familyName, joinCode, imageUrl, bio, createDate, modifyDate }
    *
    * Throws NotFoundError if not found.
    */
@@ -147,6 +154,7 @@ class Family {
         WHERE id = $${valuesArr.length + 1}
         RETURNING id,
                   family_name AS "familyName",
+                  join_code AS "joinCode", 
                   image_url AS "imageUrl",
                   bio,
                   TO_CHAR(create_date, 'YYYYMMDD') AS "createDate",  

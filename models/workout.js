@@ -73,7 +73,7 @@ class Workout {
    * Filter 'keyword' is name or description
    *
    * Returns [ workout1, workout1, ... ]
-   * where workout is { id, name, description }
+   * where workout is { id, name, description, movements }
    * */
   static async findAll(data) {
     //If filter data includes featuredBy, first ensure that the API featured workout is in the database

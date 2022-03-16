@@ -22,6 +22,7 @@ CREATE TABLE users (
 CREATE TABLE families (
   id serial PRIMARY KEY,
   family_name text NOT NULL,
+  join_code text,
   image_url text,
   bio text,
   create_date timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,

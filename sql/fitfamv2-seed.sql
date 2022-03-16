@@ -4,9 +4,9 @@
            ('clay@mail.com', '$2b$12$AZH7virni5jlTTiGgEg4zu3lSvAw68qVEfSIOjJ3RqtbJbdW/Oi5q', 'Clay', 'Braden', false),
            ('cami@mail.com', '$2b$12$AZH7virni5jlTTiGgEg4zu3lSvAw68qVEfSIOjJ3RqtbJbdW/Oi5q', 'Cami', 'Cortney', false);
   
-  INSERT INTO families (family_name)
-    VALUES ('mcbragren'),
-           ('workteam');
+  INSERT INTO families (family_name, join_code)
+    VALUES ('mcbragren', 'abcd1234'),
+           ('workteam', 'lmno1234');
   
   INSERT INTO users_families (user_id, family_id, primary_family)
     VALUES (1,1, true),
