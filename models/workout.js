@@ -67,55 +67,6 @@ class Workout {
     return new Workout(workout);
   }
 
-  /** Find featured workouts (category "wod") for a given date
-   * 
-   * Returns [ workout1, workout1, ... ]
-   * where workout is { id, name, description }
-   * */
-  //  static async findByDate(date) {
-  //   // Check if the date's workouts are already in the database
-  //   // If not, call the API and add the date's workouts to the database
-    
-  //   const res = await db.query(
-  //     `SELECT id,
-  //             wo_name AS name
-  //       FROM workouts
-  //       WHERE category = 'wod' AND publish_date=$1`,
-  //       [date]
-  //   );
-
-  //   let workouts = res.rows;
-  //   console.log(workouts)
-
-  //   if (workouts.length) {
-  //     return workouts.map(ele => new Workout(ele));
-  //   } 
-
-  //   let workoutsFromApi = [];
-  //   const apiRes = await ApiCall.getWorkouts(date);
-
-  //   for (let wo of apiRes) {
-  //     let woData = {...wo};
-  //     let movementIds = wo.movementIds;
-  //     delete woData.movementIds;
-  //     let newWorkout = await Workout.create(woData);
-  //     workoutsFromApi.push(newWorkout);
-
-  //     //insert workout's movements ids into the db
-  //     for (let movementId of movementIds) {
-  //       workouts = await db.query(
-  //         `INSERT INTO workouts_movements
-  //           (wo_id, movement_id)
-  //           VALUES
-  //           ($1, $2)`,
-  //           [newWorkout.id, movementId]
-  //       )
-  //     }
-  //   }
-
-  //   return workoutsFromApi.map(ele => new Workout({id: ele.id, name: ele.name}));
-  // }
-
 
   /** Find all workouts matching optional filtering criteria
    * Filters are swId, name, description, category, featuredDate, createBy, movementId 
@@ -221,7 +172,7 @@ class Workout {
         JOIN
           workouts w
           ON w.id = i.id
-          ORDER BY wo_name`,
+          ORDER BY w.id`,
         [...valuesArr]
     );
 

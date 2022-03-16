@@ -175,15 +175,15 @@ class Result {
                     modify_date,
                     complete_date )
         SELECT updated_result.id, 
-              updated_result.user_id AS "userId", 
-              updated_result.post_id AS "postId", 
-              updated_result.score, 
-              updated_result.notes, 
-              TO_CHAR(updated_result.create_date, 'YYYYMMDD') AS "createDate",
-              TO_CHAR(updated_result.modify_date, 'YYYYMMDD') AS "modifyDate",
-              TO_CHAR(updated_result.complete_date, 'YYYYMMDD') AS "completeDate",
-              u.first_name AS "userFirst", 
-              u.last_name AS "userLast"
+               updated_result.user_id AS "userId", 
+               updated_result.post_id AS "postId", 
+               updated_result.score, 
+               updated_result.notes, 
+               TO_CHAR(updated_result.create_date, 'YYYYMMDD') AS "createDate",
+               TO_CHAR(updated_result.modify_date, 'YYYYMMDD') AS "modifyDate",
+               TO_CHAR(updated_result.complete_date, 'YYYYMMDD') AS "completeDate",
+               u.first_name AS "userFirst", 
+               u.last_name AS "userLast"
         FROM updated_result 
         JOIN users u 
           ON u.id=updated_result.user_id`, 

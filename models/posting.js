@@ -102,7 +102,7 @@ class Posting {
         JOIN workouts w
           ON w.id = p.wo_id
         ${whereClause}
-        ORDER BY id`,
+        ORDER BY p.wo_id`,
         [...valuesArr]
     );
 

@@ -48,6 +48,7 @@ const userRegisterSchema = require("../schemas/userRegister.json");
 /** POST /auth/register   { data } => { token }
  *
  * data must include { email, password, firstName, lastName }
+ * data may include { isAdmin, userStatus, imageUrl, bio }
  *
  * Returns JWT token where token payload is {userId, isAdmin}
  *
