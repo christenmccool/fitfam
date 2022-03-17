@@ -53,7 +53,7 @@ class Family {
   
 
   /** Find all families matching optional filtering criteria
-   * Filters are familyName and bio
+   * Filters are familyName, joinCode, bio
    *
    * Returns [ family1, family2, ... ]
    * where family is { id, familyName, joinCode, imageUrl, bio }

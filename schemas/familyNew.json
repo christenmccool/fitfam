@@ -11,6 +11,11 @@
       "minLength": 5,
       "maxLength": 30
     },
+    "joinCode": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
     "imageUrl": {
       "type": "string",
       "format": "uri-reference"

@@ -45,6 +45,7 @@ const familyUpdateSchema = require("../schemas/familyUpdate.json");
  * 
  * Search filters:
  * - familyName
+ * - joinCode
  * - bio (keyword match)
  * 
  * family is { id, familyName, joinCode, image_url, bio }

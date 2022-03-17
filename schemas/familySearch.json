@@ -8,6 +8,11 @@
       "minLength": 1,
       "maxLength": 30
     },
+    "joinCode": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
     "bio": {
       "type": "string",
       "minLength": 1,
