@@ -2,7 +2,7 @@
   INSERT INTO users (email, user_password, first_name, last_name, is_admin)
     VALUES ('christen@mail.com', '$2b$12$AZH7virni5jlTTiGgEg4zu3lSvAw68qVEfSIOjJ3RqtbJbdW/Oi5q', 'Christen', 'McCool', true),
            ('clay@mail.com', '$2b$12$AZH7virni5jlTTiGgEg4zu3lSvAw68qVEfSIOjJ3RqtbJbdW/Oi5q', 'Clay', 'Braden', false),
-           ('cami@mail.com', '$2b$12$AZH7virni5jlTTiGgEg4zu3lSvAw68qVEfSIOjJ3RqtbJbdW/Oi5q', 'Cami', 'Cortney', false);
+           ('cami@mail.com', '$2b$12$AZH7virni5jlTTiGgEg4zu3lSvAw68qVEfSIOjJ3RqtbJbdW/Oi5q', 'Cami', 'Cortney', false),
            ('jack@mail.com', '$2b$12$AZH7virni5jlTTiGgEg4zu3lSvAw68qVEfSIOjJ3RqtbJbdW/Oi5q', 'Jack', 'McCool', false);
 
   INSERT INTO families (family_name, join_code)
