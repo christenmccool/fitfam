@@ -14,7 +14,9 @@
       "format": "email"
     },
     "password": {
-      "type": "string"
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 20
     }
   },
   "additionalProperties": false
