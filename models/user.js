@@ -247,7 +247,22 @@ class User {
 
     if (!user) throw new NotFoundError(`No user: ${this.username}`);
 
-    return new User(user);
+    const famRes = await db.query(
+      `SELECT uf.family_id AS "familyId",
+              f.family_name AS "familyName",
+              uf.mem_status AS "memStatus",
+              uf.is_admin AS "isAdmin",
+              uf.primary_family AS "primaryFamily"
+        FROM users_families uf
+        JOIN families f
+        ON uf.family_id = f.id
+        WHERE uf.user_id=$1`,
+      [this.id]
+    );
+        
+    let families = famRes.rows;
+
+    return new User( {...user, families} );
   }
 
   /** Delete user 
