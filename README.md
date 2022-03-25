@@ -1,4 +1,6 @@
 # FitFam
+https://mccool-fitfam-backend.herokuapp.com/
+
 An app to connect families along their fitness journeys. This repo contains the backend of the app.
 
 ### Overview
